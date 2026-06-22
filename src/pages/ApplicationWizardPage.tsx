@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -92,7 +92,6 @@ export default function ApplicationWizardPage() {
   const { adId, programId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const initStarted = useRef(false);
   const [step, setStep] = useState(0);
   const [appId, setAppId] = useState<string | null>(null);
   const [appStatus, setAppStatus] = useState<string | null>(null);
@@ -114,12 +113,12 @@ export default function ApplicationWizardPage() {
 
   useEffect(() => {
     if (!adId || !programId) return;
-    if (initStarted.current) return;
-    initStarted.current = true;
 
     let cancelled = false;
     setInitLoading(true);
     setInitError('');
+    setAppId(null);
+    setAppStatus(null);
 
     (async () => {
       try {
@@ -140,7 +139,6 @@ export default function ApplicationWizardPage() {
         setAppStatus(app.status);
       } catch (e) {
         if (cancelled) return;
-        initStarted.current = false;
         setInitError((e as Error).message || 'Could not start application');
       } finally {
         if (!cancelled) setInitLoading(false);
@@ -368,7 +366,12 @@ export default function ApplicationWizardPage() {
   const totalIncome = incomes.reduce((s, i) => s + (i.monthlySalary || 0) + (i.otherIncomeAmount || 0), 0);
 
   if (initLoading) {
-    return <div className="h-64 bg-white rounded-2xl border animate-pulse" />;
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-10 h-10 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <p className="mt-4 text-sm text-slate-500">Loading application...</p>
+      </div>
+    );
   }
 
   if (initError) {
@@ -380,7 +383,16 @@ export default function ApplicationWizardPage() {
     );
   }
 
-  if (isLockedView && appId && appStatus) {
+  if (!appId) {
+    return (
+      <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+        <p className="text-slate-600">Could not load your application. Please try again.</p>
+        <Link to="/advertisements" className="text-emerald-700 text-sm mt-3 inline-block hover:underline">← Back to scholarships</Link>
+      </div>
+    );
+  }
+
+  if (isLockedView && appStatus) {
     return (
       <div className="space-y-6">
         <Link to="/advertisements" className="text-sm text-emerald-700 hover:underline">← Back to scholarships</Link>
@@ -403,7 +415,7 @@ export default function ApplicationWizardPage() {
               to={`/application/${appId}`}
               className="px-5 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800"
             >
-              View application & progress
+              Track Progress
             </Link>
             <Link
               to="/applications"

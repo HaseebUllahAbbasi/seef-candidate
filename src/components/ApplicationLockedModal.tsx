@@ -42,7 +42,7 @@ export default function ApplicationLockedModal({
               onClick={onClose}
               className="flex-1 text-center px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 transition-colors"
             >
-              View application & progress
+              Track Progress
             </Link>
           )}
           <button
