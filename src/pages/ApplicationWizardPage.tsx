@@ -8,6 +8,7 @@ import { canEditApplication } from '../lib/applicationAccess';
 import { STATUS_LABELS } from '../lib/applicationStatus';
 import { autofillSampleDocuments, WIZARD_DOC_TYPES } from '../lib/sampleDocuments';
 import { SINDH_DISTRICTS } from '../lib/districts';
+import { RELIGIONS } from '../lib/religions';
 import { personalSchema, academicSchema, disabilitySchema, PersonalForm, AcademicForm } from '../lib/validation';
 import { FormField, inputClass, btnPrimary, Card } from '../components/ui';
 import DocumentPreview from '../components/DocumentPreview';
@@ -237,6 +238,7 @@ export default function ApplicationWizardPage() {
         currentAddress: 'House No. 45, Main Road, Latifabad, Hyderabad, Sindh',
         district: 'Hyderabad',
         domicileDistrict: 'Hyderabad',
+        religion: 'Islam',
       });
     } else if (step === 1) {
       academicForm.reset({
@@ -440,6 +442,12 @@ export default function ApplicationWizardPage() {
                 <option value="">Select</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
+              </select>
+            </FormField>
+            <FormField label="Religion" required>
+              <select {...personalForm.register('religion')} className={inputClass()}>
+                <option value="">Select</option>
+                {RELIGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             </FormField>
             <FormField label="Email" error={personalForm.formState.errors.email} required><input {...personalForm.register('email')} className={inputClass()} /></FormField>

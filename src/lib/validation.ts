@@ -49,6 +49,7 @@ export const personalSchema = z.object({
   currentAddress: z.string().max(500).optional(),
   district: z.string().min(1),
   domicileDistrict: z.string().min(1),
+  religion: z.string().min(1, 'Select religion'),
 });
 
 export const academicSchema = z.object({
