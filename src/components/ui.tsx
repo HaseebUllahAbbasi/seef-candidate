@@ -27,7 +27,7 @@ export function btnPrimary(disabled?: boolean) {
 
 export function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-emerald-200/60 shadow-sm overflow-hidden transition-colors hover:border-emerald-300/80">
       <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100 bg-slate-50/50">
         <h2 className="font-semibold text-slate-800">{title}</h2>
         {action}

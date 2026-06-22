@@ -2,10 +2,13 @@ export const APPLICATION_STEPS = [
   { key: 'applied', label: 'Applied', icon: 'user' },
   { key: 'verified', label: 'Verified', icon: 'shield' },
   { key: 'shortlisted', label: 'Shortlisted', icon: 'list' },
-  { key: 'interview', label: 'Interview', icon: 'calendar' },
-  { key: 'conducted', label: 'Interview Done', icon: 'users' },
+  { key: 'interview', label: 'Interview Scheduled', icon: 'calendar' },
+  { key: 'conducted', label: 'Interview Conducted', icon: 'users' },
   { key: 'merit', label: 'Merit Review', icon: 'chart' },
+  // this might change according to the final status of the application, put in waiting, rejected, etc.
   { key: 'awarded', label: 'Awarded', icon: 'award' },
+
+
 ] as const;
 
 /** Maps status to the highest completed step index (0-based). */

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { canEditApplication } from '../lib/applicationAccess';
+import { STATUS_LABELS } from '../lib/applicationStatus';
 
 export interface ScholarshipAd {
   id: string;
@@ -10,6 +12,13 @@ export interface ScholarshipAd {
   programs?: { id: string; programName: string }[];
 }
 
+export interface ExistingApplication {
+  id: string;
+  status: string;
+  programId: string;
+  editUnlocked?: boolean;
+}
+
 interface Props {
   ad: ScholarshipAd;
   variant?: 'landing' | 'compact';
@@ -18,6 +27,7 @@ interface Props {
   showAction?: boolean;
   detailHref?: string;
   hidePrograms?: boolean;
+  existingApplication?: ExistingApplication;
 }
 
 export default function ScholarshipCard({
@@ -28,10 +38,15 @@ export default function ScholarshipCard({
   showAction = true,
   detailHref,
   hidePrograms = false,
+  existingApplication,
 }: Props) {
   const deadline = new Date(ad.endDate);
   const daysLeft = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   const isOpen = daysLeft > 0;
+  const canEdit = existingApplication ? canEditApplication(existingApplication) : false;
+  const continueHref = existingApplication
+    ? `/apply/${ad.id}/${existingApplication.programId}`
+    : applyHref;
 
   const body = (
     <>
@@ -42,7 +57,9 @@ export default function ScholarshipCard({
             {ad.year} Session
           </span>
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${isOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
-            {isOpen ? 'Open' : 'Closed'}
+            {existingApplication
+              ? (STATUS_LABELS[existingApplication.status] || 'Applied')
+              : (isOpen ? 'Open' : 'Closed')}
           </span>
         </div>
 
@@ -51,6 +68,12 @@ export default function ScholarshipCard({
         </h3>
         {ad.catchyLine && (
           <p className="text-sm text-slate-500 mt-2 line-clamp-2">{ad.catchyLine}</p>
+        )}
+
+        {existingApplication && (
+          <p className="mt-3 text-xs text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+            You have already applied for this scholarship.
+          </p>
         )}
 
         <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
@@ -86,16 +109,35 @@ export default function ScholarshipCard({
                 View details
               </Link>
             )}
-            {(applyHref || applyBasePath) && isOpen && (
-              <Link
-                to={applyHref || applyBasePath}
-                className="inline-flex items-center justify-center flex-1 gap-2 px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 transition-colors shadow-sm shadow-emerald-600/20"
-              >
-                Apply now
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
+            {existingApplication ? (
+              <>
+                <Link
+                  to={`/application/${existingApplication.id}`}
+                  className="inline-flex items-center justify-center flex-1 gap-2 px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 transition-colors shadow-sm shadow-emerald-600/20"
+                >
+                  View application & progress
+                </Link>
+                {canEdit && continueHref && (
+                  <Link
+                    to={continueHref}
+                    className="inline-flex items-center justify-center flex-1 gap-2 px-4 py-2.5 border border-emerald-600 text-emerald-800 bg-white text-sm font-semibold rounded-xl hover:bg-emerald-50 transition-colors"
+                  >
+                    {existingApplication.status === 'DRAFT' ? 'Continue draft' : 'Update application'}
+                  </Link>
+                )}
+              </>
+            ) : (
+              (applyHref || applyBasePath) && isOpen && (
+                <Link
+                  to={applyHref || applyBasePath}
+                  className="inline-flex items-center justify-center flex-1 gap-2 px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 transition-colors shadow-sm shadow-emerald-600/20"
+                >
+                  Apply now
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+              )
             )}
           </div>
         )}

@@ -109,8 +109,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <main className="flex-1 p-4 md:p-8 overflow-auto bg-slate-50">
-          <div className="max-w-4xl mx-auto w-full">{children}</div>
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto bg-slate-50">
+          <div className="max-w-6xl xl:max-w-7xl mx-auto w-full">{children}</div>
         </main>
       </div>
     </div>

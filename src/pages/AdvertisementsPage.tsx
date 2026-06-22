@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useMyApplications } from '../hooks/useMyApplications';
 import ScholarshipCard, { ScholarshipAd } from '../components/ScholarshipCard';
 import { DEMO_SCHOLARSHIPS } from '../lib/seefContent';
 
 export default function AdvertisementsPage() {
   const { user } = useAuth();
+  const { getForAdvertisement, loading: appsLoading } = useMyApplications();
   const [ads, setAds] = useState<ScholarshipAd[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,17 +20,19 @@ export default function AdvertisementsPage() {
       .finally(() => setLoading(false));
   }, [user?.universityId]);
 
+  const pageLoading = loading || appsLoading;
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-emerald-700 to-emerald-900 rounded-2xl p-6 text-white shadow-lg shadow-emerald-900/10">
         <h1 className="text-2xl font-bold">Apply for Scholarships</h1>
         <p className="text-emerald-100 text-sm mt-1">
-          Browse open scholarships and apply with one click
+          Browse open scholarships — if you have already applied, use &quot;View application & progress&quot; to check your status
           {user?.university && <> · <span className="text-white font-medium">{user.university.name}</span></>}
         </p>
       </div>
 
-      {loading ? (
+      {pageLoading ? (
         <div className="grid md:grid-cols-2 gap-5">
           {[1, 2].map((i) => <div key={i} className="h-56 bg-white rounded-2xl border border-slate-200 animate-pulse" />)}
         </div>
@@ -40,6 +44,7 @@ export default function AdvertisementsPage() {
       ) : (
         <div className="grid md:grid-cols-2 gap-5">
           {ads.map((ad) => {
+            const existing = getForAdvertisement(ad.id);
             const firstProgramId = ad.programs?.[0]?.id;
             return (
               <ScholarshipCard
@@ -50,6 +55,12 @@ export default function AdvertisementsPage() {
                 hidePrograms
                 detailHref={`/advertisement/${ad.id}`}
                 applyHref={firstProgramId ? `/apply/${ad.id}/${firstProgramId}` : undefined}
+                existingApplication={existing ? {
+                  id: existing.id,
+                  status: existing.status,
+                  programId: existing.programId,
+                  editUnlocked: existing.editUnlocked,
+                } : undefined}
               />
             );
           })}

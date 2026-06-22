@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api, apiUpload } from '../lib/api';
+import { isApplicationLockedError } from '../lib/errors';
+import { canEditApplication } from '../lib/applicationAccess';
+import { STATUS_LABELS } from '../lib/applicationStatus';
 import { autofillSampleDocuments, WIZARD_DOC_TYPES } from '../lib/sampleDocuments';
 import { SINDH_DISTRICTS } from '../lib/districts';
 import { personalSchema, academicSchema, disabilitySchema, PersonalForm, AcademicForm } from '../lib/validation';
 import { FormField, inputClass, btnPrimary, Card } from '../components/ui';
 import DocumentPreview from '../components/DocumentPreview';
+import ApplicationLockedModal from '../components/ApplicationLockedModal';
+import StatusStepper from '../components/StatusStepper';
 
 const STEPS = ['Personal', 'Academic', 'Disability', 'Family', 'Financial', 'Documents', 'Review'];
 const DISTRICTS = SINDH_DISTRICTS;
@@ -86,6 +91,11 @@ export default function ApplicationWizardPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [appId, setAppId] = useState<string | null>(null);
+  const [appStatus, setAppStatus] = useState<string | null>(null);
+  const [initLoading, setInitLoading] = useState(true);
+  const [initError, setInitError] = useState('');
+  const [lockedModalOpen, setLockedModalOpen] = useState(false);
+  const [actionError, setActionError] = useState('');
   const [declared, setDeclared] = useState(false);
   const [members, setMembers] = useState<FamilyMemberForm[]>([emptyMember(), { ...emptyMember(), relationType: 'Mother', isWorking: false, employmentType: 'Housewife' }]);
   const [incomes, setIncomes] = useState<IncomeForm[]>([]);
@@ -99,19 +109,60 @@ export default function ApplicationWizardPage() {
   const disabilityForm = useForm({ resolver: zodResolver(disabilitySchema), mode: 'onBlur', defaultValues: { hasDisability: false, isOrphan: false } });
 
   useEffect(() => {
-    if (adId && programId) {
-      api<{ id: string }>('/applications', { method: 'POST', body: JSON.stringify({ advertisementId: adId, programId }) })
-        .then((a) => setAppId(a.id))
-        .catch(async () => {
-          const mine = await api<{ id: string; advertisementId: string; programId: string }[]>('/applications/mine');
-          const existing = mine.find((a) => a.advertisementId === adId && a.programId === programId);
-          if (existing) setAppId(existing.id);
+    if (!adId || !programId) return;
+
+    let cancelled = false;
+    setInitLoading(true);
+    setInitError('');
+
+    (async () => {
+      try {
+        const app = await api<{
+          id: string;
+          status: string;
+          editUnlocked?: boolean;
+          advertisementId: string;
+          programId: string;
+        }>('/applications', {
+          method: 'POST',
+          body: JSON.stringify({ advertisementId: adId, programId }),
         });
-    }
+
+        if (cancelled) return;
+
+        if (!canEditApplication(app)) {
+          setAppId(app.id);
+          setAppStatus(app.status);
+          return;
+        }
+
+        setAppId(app.id);
+        setAppStatus(app.status);
+      } catch (e) {
+        if (cancelled) return;
+        setInitError((e as Error).message || 'Could not start application');
+      } finally {
+        if (!cancelled) setInitLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [adId, programId]);
 
+  const handleLockedError = (error: unknown) => {
+    if (isApplicationLockedError(error)) {
+      setLockedModalOpen(true);
+      setActionError('');
+      return true;
+    }
+    setActionError((error as Error).message);
+    return false;
+  };
+
+  const isLockedView = !!(appId && appStatus && !canEditApplication({ status: appStatus }));
+
   useEffect(() => {
-    if (!appId) return;
+    if (!appId || isLockedView) return;
     api<{
       personal?: PersonalForm & { dateOfBirth: string };
       academic?: AcademicForm;
@@ -148,7 +199,7 @@ export default function ApplicationWizardPage() {
       if (data.propertyAssets?.length) setProperties(data.propertyAssets as PropertyForm[]);
       if (data.documents) setDocuments(data.documents);
     }).catch(() => {});
-  }, [appId]);
+  }, [appId, isLockedView]);
 
   // Sync income rows when entering financial step
   useEffect(() => {
@@ -220,68 +271,147 @@ export default function ApplicationWizardPage() {
 
   const saveStep = async () => {
     if (!appId) return;
-    if (step === 0) {
-      const valid = await personalForm.trigger();
-      if (!valid) return;
-      await api(`/applications/${appId}/personal`, { method: 'PUT', body: JSON.stringify(personalForm.getValues()) });
-    } else if (step === 1) {
-      const valid = await academicForm.trigger();
-      if (!valid) return;
-      await api(`/applications/${appId}/academic`, { method: 'PUT', body: JSON.stringify(academicForm.getValues()) });
-    } else if (step === 2) {
-      await api(`/applications/${appId}/disability`, { method: 'PUT', body: JSON.stringify(disabilityForm.getValues()) });
-    } else if (step === 3) {
-      const validMembers = members.filter((m) => m.name.trim());
-      if (validMembers.length === 0) return;
-      await api(`/applications/${appId}/family`, {
-        method: 'PUT',
-        body: JSON.stringify({ members: validMembers }),
-      });
-    } else if (step === 4) {
-      await api(`/applications/${appId}/financial`, {
-        method: 'PUT',
-        body: JSON.stringify({ properties, incomeSources: incomes }),
-      });
+    setActionError('');
+    try {
+      if (step === 0) {
+        const valid = await personalForm.trigger();
+        if (!valid) return;
+        await api(`/applications/${appId}/personal`, { method: 'PUT', body: JSON.stringify(personalForm.getValues()) });
+      } else if (step === 1) {
+        const valid = await academicForm.trigger();
+        if (!valid) return;
+        await api(`/applications/${appId}/academic`, { method: 'PUT', body: JSON.stringify(academicForm.getValues()) });
+      } else if (step === 2) {
+        await api(`/applications/${appId}/disability`, { method: 'PUT', body: JSON.stringify(disabilityForm.getValues()) });
+      } else if (step === 3) {
+        const validMembers = members.filter((m) => m.name.trim());
+        if (validMembers.length === 0) return;
+        await api(`/applications/${appId}/family`, {
+          method: 'PUT',
+          body: JSON.stringify({ members: validMembers }),
+        });
+      } else if (step === 4) {
+        await api(`/applications/${appId}/financial`, {
+          method: 'PUT',
+          body: JSON.stringify({ properties, incomeSources: incomes }),
+        });
+      }
+      setStep(step + 1);
+    } catch (e) {
+      handleLockedError(e);
     }
-    setStep(step + 1);
   };
 
   const uploadDoc = async (type: string, file: File) => {
     if (!appId) return;
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('type', type);
-    const doc = await apiUpload<AppDoc>(`/applications/${appId}/documents`, fd);
-    setDocuments((prev) => {
-      const filtered = prev.filter((d) => d.type !== type);
-      return [...filtered, doc];
-    });
+    setActionError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('type', type);
+      const doc = await apiUpload<AppDoc>(`/applications/${appId}/documents`, fd);
+      setDocuments((prev) => {
+        const filtered = prev.filter((d) => d.type !== type);
+        return [...filtered, doc];
+      });
+    } catch (e) {
+      handleLockedError(e);
+    }
   };
 
   const linkDoc = async (type: string, url: string) => {
     if (!appId || !url.trim()) return;
-    const doc = await api<AppDoc>(`/applications/${appId}/documents/link`, {
-      method: 'POST',
-      body: JSON.stringify({ type, url: url.trim() }),
-    });
-    setDocuments((prev) => {
-      const filtered = prev.filter((d) => d.type !== type);
-      return [...filtered, doc];
-    });
-    setDocLinks((prev) => ({ ...prev, [type]: '' }));
+    setActionError('');
+    try {
+      const doc = await api<AppDoc>(`/applications/${appId}/documents/link`, {
+        method: 'POST',
+        body: JSON.stringify({ type, url: url.trim() }),
+      });
+      setDocuments((prev) => {
+        const filtered = prev.filter((d) => d.type !== type);
+        return [...filtered, doc];
+      });
+      setDocLinks((prev) => ({ ...prev, [type]: '' }));
+    } catch (e) {
+      handleLockedError(e);
+    }
   };
 
   const submit = async () => {
     if (!appId || !declared) return;
-    await api(`/applications/${appId}/submit`, { method: 'POST' });
-    navigate(`/application/${appId}`);
+    setActionError('');
+    try {
+      await api(`/applications/${appId}/submit`, { method: 'POST' });
+      navigate(`/application/${appId}`);
+    } catch (e) {
+      handleLockedError(e);
+    }
   };
 
   const totalIncome = incomes.reduce((s, i) => s + (i.monthlySalary || 0) + (i.otherIncomeAmount || 0), 0);
 
+  if (initLoading) {
+    return <div className="h-64 bg-white rounded-2xl border animate-pulse" />;
+  }
+
+  if (initError) {
+    return (
+      <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+        <p className="text-red-600">{initError}</p>
+        <Link to="/advertisements" className="text-emerald-700 text-sm mt-3 inline-block hover:underline">← Back to scholarships</Link>
+      </div>
+    );
+  }
+
+  if (isLockedView && appId && appStatus) {
+    return (
+      <div className="space-y-6">
+        <Link to="/advertisements" className="text-sm text-emerald-700 hover:underline">← Back to scholarships</Link>
+        <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-6 md:p-8">
+          <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-2xl mb-4">
+            🔒
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Application is locked for editing</h1>
+          <p className="text-slate-600 mt-2 max-w-xl leading-relaxed">
+            You have already submitted this scholarship application. It is now under review and cannot be changed unless your university unlocks it for corrections.
+          </p>
+          <p className="mt-4 inline-flex text-sm font-semibold px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-full border border-emerald-100">
+            {STATUS_LABELS[appStatus] || appStatus.replace(/_/g, ' ')}
+          </p>
+          <div className="mt-6 bg-slate-50 rounded-xl p-4 border border-slate-100">
+            <StatusStepper status={appStatus} />
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              to={`/application/${appId}`}
+              className="px-5 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800"
+            >
+              View application & progress
+            </Link>
+            <Link
+              to="/applications"
+              className="px-5 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-xl hover:bg-slate-50"
+            >
+              All my applications
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      <ApplicationLockedModal
+        open={lockedModalOpen}
+        onClose={() => setLockedModalOpen(false)}
+        applicationId={appId ?? undefined}
+        status={appStatus ?? undefined}
+      />
       <h1 className="text-2xl font-bold">Scholarship Application</h1>
+      {actionError && (
+        <div className="p-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl">{actionError}</div>
+      )}
       <div className="flex flex-wrap gap-2">
         {STEPS.map((s, i) => (
           <span key={s} className={`text-xs px-3 py-1 rounded-full ${i === step ? 'bg-emerald-700 text-white' : i < step ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>

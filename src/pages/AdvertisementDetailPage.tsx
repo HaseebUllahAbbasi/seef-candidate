@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useMyApplications } from '../hooks/useMyApplications';
+import { canEditApplication } from '../lib/applicationAccess';
+import { STATUS_LABELS } from '../lib/applicationStatus';
 import { Card, btnPrimary } from '../components/ui';
 
 interface AdDetail {
@@ -24,6 +27,7 @@ interface AdDetail {
 export default function AdvertisementDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { getForAdvertisement } = useMyApplications();
   const [ad, setAd] = useState<AdDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,6 +53,7 @@ export default function AdvertisementDetailPage() {
     );
   }
 
+  const existing = getForAdvertisement(ad.id);
   const deadline = new Date(ad.endDate);
   const daysLeft = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   const isOpen = daysLeft > 0 && ad.status === 'PUBLISHED';
@@ -68,7 +73,9 @@ export default function AdvertisementDetailPage() {
             {ad.catchyLine && <p className="text-emerald-100 mt-2">{ad.catchyLine}</p>}
           </div>
           <span className={`text-sm font-medium px-3 py-1.5 rounded-full ${isOpen ? 'bg-emerald-500/20 text-emerald-100' : 'bg-white/10 text-emerald-200'}`}>
-            {isOpen ? 'Open for applications' : 'Closed'}
+            {existing
+              ? (STATUS_LABELS[existing.status] || 'Applied')
+              : (isOpen ? 'Open for applications' : 'Closed')}
           </span>
         </div>
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-emerald-100">
@@ -78,6 +85,23 @@ export default function AdvertisementDetailPage() {
           {uniQuota && <span>{uniQuota.seats} seats at your university</span>}
         </div>
       </div>
+
+      {existing && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="font-medium text-emerald-900">You have already applied for this scholarship</p>
+            <p className="text-sm text-emerald-800 mt-0.5">
+              Status: {STATUS_LABELS[existing.status] || existing.status.replace(/_/g, ' ')}
+            </p>
+          </div>
+          <Link
+            to={`/application/${existing.id}`}
+            className="shrink-0 px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 text-center"
+          >
+            View application & progress
+          </Link>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         <Card title="Eligibility">
@@ -99,26 +123,48 @@ export default function AdvertisementDetailPage() {
         </div>
       )}
 
-      <Card title="Programs — select to apply">
+      <Card title="Programs">
         {ad.programs.length === 0 ? (
           <p className="text-sm text-slate-500">No programs listed.</p>
         ) : (
           <div className="space-y-3">
-            {ad.programs.map((p) => (
-              <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <div>
-                  <p className="font-semibold text-slate-900">{p.programName}</p>
-                  {p.description && <p className="text-sm text-slate-500 mt-0.5">{p.description}</p>}
+            {ad.programs.map((p) => {
+              const isExistingProgram = existing?.programId === p.id;
+              const canEdit = existing && canEditApplication(existing);
+              return (
+                <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div>
+                    <p className="font-semibold text-slate-900">{p.programName}</p>
+                    {p.description && <p className="text-sm text-slate-500 mt-0.5">{p.description}</p>}
+                  </div>
+                  {existing ? (
+                    isExistingProgram ? (
+                      <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                        <Link to={`/application/${existing.id}`} className={`${btnPrimary()} text-center px-5 py-2.5`}>
+                          View progress
+                        </Link>
+                        {canEdit && (
+                          <Link
+                            to={`/apply/${ad.id}/${p.id}`}
+                            className="text-center px-5 py-2.5 border border-emerald-600 text-emerald-800 rounded-lg hover:bg-emerald-50 text-sm font-medium"
+                          >
+                            {existing.status === 'DRAFT' ? 'Continue draft' : 'Update application'}
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">Applied under another program</span>
+                    )
+                  ) : isOpen ? (
+                    <Link to={`/apply/${ad.id}/${p.id}`} className={`${btnPrimary()} text-center shrink-0 px-5 py-2.5`}>
+                      Apply now
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-slate-400">Applications closed</span>
+                  )}
                 </div>
-                {isOpen ? (
-                  <Link to={`/apply/${ad.id}/${p.id}`} className={`${btnPrimary()} text-center shrink-0 px-5 py-2.5`}>
-                    Apply now
-                  </Link>
-                ) : (
-                  <span className="text-xs text-slate-400">Applications closed</span>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>

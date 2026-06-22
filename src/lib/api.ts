@@ -1,3 +1,5 @@
+import { ApiError } from './errors';
+
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
 
 export function getToken() {
@@ -24,7 +26,13 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed: ${res.status}`);
+  if (!res.ok) {
+    throw new ApiError(
+      data.error || `Request failed: ${res.status}`,
+      data.code,
+      data,
+    );
+  }
   return data as T;
 }
 
@@ -36,6 +44,8 @@ export async function apiUpload<T>(path: string, formData: FormData): Promise<T>
     body: formData,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Upload failed');
+  if (!res.ok) {
+    throw new ApiError(data.error || 'Upload failed', data.code, data);
+  }
   return data as T;
 }
