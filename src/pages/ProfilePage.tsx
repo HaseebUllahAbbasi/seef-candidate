@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../context/AuthContext';
 import { profileSchema, changePasswordSchema, ProfileForm, ChangePasswordForm } from '../lib/validation';
 import { userAvatar } from '../lib/avatar';
+import { RELIGIONS } from '../lib/religions';
 import { FormField, inputClass, btnPrimary, Card } from '../components/ui';
 
 export default function ProfilePage() {
@@ -23,6 +24,7 @@ export default function ProfilePage() {
       lastName: user?.lastName || user?.fullName?.split(' ').slice(1).join(' ') || '',
       cnic: user?.cnic || '',
       gender: (user?.gender as ProfileForm['gender']) || undefined,
+      religion: user?.religion || '',
       mobile: user?.mobile || '',
     },
   });
@@ -53,7 +55,7 @@ export default function ProfilePage() {
           {welcome ? (
             <p className="font-medium">Welcome! Please add your first name, last name, CNIC, and gender before applying for scholarships.</p>
           ) : (
-            <p>Complete your profile — first name, last name, CNIC, and gender are required before submitting scholarship applications.</p>
+            <p>Complete your profile — first name, last name, CNIC, gender, and religion are required before submitting scholarship applications.</p>
           )}
         </div>
       )}
@@ -91,6 +93,12 @@ export default function ProfilePage() {
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
               <option value="OTHER">Other</option>
+            </select>
+          </FormField>
+          <FormField label="Religion" error={profileForm.formState.errors.religion} hint="Used to pre-fill your scholarship application">
+            <select {...profileForm.register('religion')} className={inputClass()}>
+              <option value="">Select religion</option>
+              {RELIGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </FormField>
           <FormField label="Mobile" error={profileForm.formState.errors.mobile}>

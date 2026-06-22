@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { canEditApplication } from '../lib/applicationAccess';
-import { STATUS_LABELS } from '../lib/applicationStatus';
+import { STATUS_LABELS, statusBadgeClasses } from '../lib/applicationStatus';
 
 export interface ScholarshipAd {
   id: string;
@@ -56,7 +56,11 @@ export default function ScholarshipCard({
           <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
             {ad.year} Session
           </span>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${isOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+            existingApplication
+              ? statusBadgeClasses(existingApplication.status)
+              : (isOpen ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200')
+          }`}>
             {existingApplication
               ? (STATUS_LABELS[existingApplication.status] || 'Applied')
               : (isOpen ? 'Open' : 'Closed')}

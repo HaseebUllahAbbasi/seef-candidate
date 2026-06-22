@@ -4,7 +4,8 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useMyApplications } from '../hooks/useMyApplications';
 import { canEditApplication } from '../lib/applicationAccess';
-import { STATUS_LABELS } from '../lib/applicationStatus';
+import { STATUS_LABELS, statusBadgeClasses } from '../lib/applicationStatus';
+import CountdownTimer from '../components/CountdownTimer';
 import { Card, btnPrimary } from '../components/ui';
 
 interface AdDetail {
@@ -31,11 +32,15 @@ export default function AdvertisementDetailPage() {
   const [ad, setAd] = useState<AdDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [programId, setProgramId] = useState('');
 
   useEffect(() => {
     if (!id) return;
     api<AdDetail>(`/advertisements/public/${id}`)
-      .then(setAd)
+      .then((data) => {
+        setAd(data);
+        setProgramId(data.programs[0]?.id ?? '');
+      })
       .catch((e) => setError((e as Error).message))
       .finally(() => setLoading(false));
   }, [id]);
@@ -55,51 +60,58 @@ export default function AdvertisementDetailPage() {
 
   const existing = getForAdvertisement(ad.id);
   const deadline = new Date(ad.endDate);
-  const daysLeft = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const isOpen = daysLeft > 0 && ad.status === 'PUBLISHED';
+  const isOpen = deadline.getTime() > Date.now() && ad.status === 'PUBLISHED';
   const uniQuota = ad.quotas?.find((q) => q.university?.id === user?.universityId);
+  const canEdit = existing ? canEditApplication(existing) : false;
+  const applyProgramId = existing?.programId ?? programId;
+  const applyHref = applyProgramId ? `/apply/${ad.id}/${applyProgramId}` : undefined;
+
+  const statusLabel = existing
+    ? (STATUS_LABELS[existing.status] || 'Applied')
+    : (isOpen ? 'Open for applications' : 'Closed');
+  const statusClass = existing
+    ? statusBadgeClasses(existing.status)
+    : (isOpen ? 'bg-emerald-500/20 text-emerald-100 border-emerald-400/30' : 'bg-white/10 text-emerald-200 border-white/20');
 
   return (
     <div className="space-y-6">
       <Link to="/advertisements" className="text-sm text-emerald-700 hover:underline">← Back to scholarships</Link>
 
-      <div className="bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-2xl p-6 md:p-8 text-white shadow-lg">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-200 bg-white/10 px-2.5 py-1 rounded-full">
-              {ad.year} · {ad.regNo}
+      <div className="grid lg:grid-cols-[1fr_auto] gap-4 items-start">
+        <div className="bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-2xl p-6 md:p-8 text-white shadow-lg">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-200 bg-white/10 px-2.5 py-1 rounded-full">
+                {ad.year} · {ad.regNo}
+              </span>
+              <h1 className="text-2xl md:text-3xl font-bold mt-3">{ad.name}</h1>
+              {ad.catchyLine && <p className="text-emerald-100 mt-2">{ad.catchyLine}</p>}
+            </div>
+            <span className={`text-sm font-medium px-3 py-1.5 rounded-full border ${statusClass}`}>
+              {statusLabel}
             </span>
-            <h1 className="text-2xl md:text-3xl font-bold mt-3">{ad.name}</h1>
-            {ad.catchyLine && <p className="text-emerald-100 mt-2">{ad.catchyLine}</p>}
           </div>
-          <span className={`text-sm font-medium px-3 py-1.5 rounded-full ${isOpen ? 'bg-emerald-500/20 text-emerald-100' : 'bg-white/10 text-emerald-200'}`}>
-            {existing
-              ? (STATUS_LABELS[existing.status] || 'Applied')
-              : (isOpen ? 'Open for applications' : 'Closed')}
-          </span>
+          <div className="mt-4 flex flex-wrap gap-4 text-sm text-emerald-100">
+            <span>Opens: {new Date(ad.startDate).toLocaleDateString()}</span>
+            <span>Deadline: {deadline.toLocaleDateString()}</span>
+            {uniQuota && <span>{uniQuota.seats} seats at your university</span>}
+          </div>
         </div>
-        <div className="mt-4 flex flex-wrap gap-4 text-sm text-emerald-100">
-          <span>Opens: {new Date(ad.startDate).toLocaleDateString()}</span>
-          <span>Deadline: {deadline.toLocaleDateString()}</span>
-          {isOpen && daysLeft <= 30 && <span className="text-amber-200 font-medium">{daysLeft} days left</span>}
-          {uniQuota && <span>{uniQuota.seats} seats at your university</span>}
-        </div>
+        <CountdownTimer endDate={ad.endDate} />
       </div>
 
       {existing && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className={`p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 border ${
+          existing.status === 'DRAFT' ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
+        }`}>
           <div>
-            <p className="font-medium text-emerald-900">You have already applied for this scholarship</p>
-            <p className="text-sm text-emerald-800 mt-0.5">
+            <p className={`font-medium ${existing.status === 'DRAFT' ? 'text-amber-900' : 'text-emerald-900'}`}>
+              You have already started an application for this scholarship
+            </p>
+            <p className={`text-sm mt-0.5 ${existing.status === 'DRAFT' ? 'text-amber-800' : 'text-emerald-800'}`}>
               Status: {STATUS_LABELS[existing.status] || existing.status.replace(/_/g, ' ')}
             </p>
           </div>
-          <Link
-            to={`/application/${existing.id}`}
-            className="shrink-0 px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 text-center"
-          >
-            View application & progress
-          </Link>
         </div>
       )}
 
@@ -127,46 +139,62 @@ export default function AdvertisementDetailPage() {
         {ad.programs.length === 0 ? (
           <p className="text-sm text-slate-500">No programs listed.</p>
         ) : (
-          <div className="space-y-3">
+          <ul className="divide-y divide-slate-100">
             {ad.programs.map((p) => {
-              const isExistingProgram = existing?.programId === p.id;
-              const canEdit = existing && canEditApplication(existing);
+              const isAppliedProgram = existing?.programId === p.id;
               return (
-                <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div>
-                    <p className="font-semibold text-slate-900">{p.programName}</p>
-                    {p.description && <p className="text-sm text-slate-500 mt-0.5">{p.description}</p>}
-                  </div>
+                <li key={p.id}>
                   {existing ? (
-                    isExistingProgram ? (
-                      <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                        <Link to={`/application/${existing.id}`} className={`${btnPrimary()} text-center px-5 py-2.5`}>
-                          View progress
-                        </Link>
-                        {canEdit && (
-                          <Link
-                            to={`/apply/${ad.id}/${p.id}`}
-                            className="text-center px-5 py-2.5 border border-emerald-600 text-emerald-800 rounded-lg hover:bg-emerald-50 text-sm font-medium"
-                          >
-                            {existing.status === 'DRAFT' ? 'Continue draft' : 'Update application'}
-                          </Link>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-400">Applied under another program</span>
-                    )
-                  ) : isOpen ? (
-                    <Link to={`/apply/${ad.id}/${p.id}`} className={`${btnPrimary()} text-center shrink-0 px-5 py-2.5`}>
-                      Apply now
-                    </Link>
+                    <div className={`py-3 ${isAppliedProgram ? 'text-emerald-800 font-semibold' : 'text-slate-500'}`}>
+                      {p.programName}
+                      {p.description && <p className="text-sm font-normal text-slate-500 mt-0.5">{p.description}</p>}
+                      {isAppliedProgram && <span className="ml-2 text-xs font-medium text-emerald-600">(your program)</span>}
+                    </div>
                   ) : (
-                    <span className="text-xs text-slate-400">Applications closed</span>
+                    <label className={`flex items-start gap-3 py-3 cursor-pointer ${programId === p.id ? 'text-slate-900' : 'text-slate-600'}`}>
+                      <input
+                        type="radio"
+                        name="program"
+                        value={p.id}
+                        checked={programId === p.id}
+                        onChange={() => setProgramId(p.id)}
+                        className="mt-1 text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <span>
+                        <span className="font-medium">{p.programName}</span>
+                        {p.description && <p className="text-sm text-slate-500 mt-0.5">{p.description}</p>}
+                      </span>
+                    </label>
                   )}
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
+
+        <div className="mt-6 pt-4 border-t border-slate-100">
+          {existing ? (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Link to={`/application/${existing.id}`} className={`${btnPrimary()} text-center flex-1 py-3`}>
+                View application & progress
+              </Link>
+              {canEdit && applyHref && (
+                <Link
+                  to={applyHref}
+                  className="text-center flex-1 py-3 border border-emerald-600 text-emerald-800 rounded-lg hover:bg-emerald-50 text-sm font-medium"
+                >
+                  {existing.status === 'DRAFT' ? 'Continue draft' : 'Update application'}
+                </Link>
+              )}
+            </div>
+          ) : isOpen && applyHref ? (
+            <Link to={applyHref} className={`${btnPrimary()} text-center block w-full py-3`}>
+              Apply now
+            </Link>
+          ) : (
+            <p className="text-sm text-center text-slate-500">Applications are closed for this scholarship.</p>
+          )}
+        </div>
       </Card>
     </div>
   );

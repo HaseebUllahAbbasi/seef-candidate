@@ -12,6 +12,7 @@ export interface User {
   cnic?: string | null;
   mobile?: string;
   gender?: string | null;
+  religion?: string | null;
   universityId?: string | null;
   university?: { id: string; name: string; code: string };
   emailVerified?: boolean;

@@ -44,3 +44,16 @@ export const STATUS_LABELS: Record<string, string> = {
   ON_HOLD_VERIFIED: 'On Hold — Verified',
   ON_HOLD_RESULT_PENDING: 'Result Pending',
 };
+
+export function statusBadgeClasses(status: string): string {
+  if (status === 'DRAFT') {
+    return 'bg-amber-100 text-amber-900 border-amber-200';
+  }
+  if (status === 'REJECTED') {
+    return 'bg-red-100 text-red-800 border-red-200';
+  }
+  if (status === 'WAITING_LIST' || status.startsWith('ON_HOLD')) {
+    return 'bg-slate-100 text-slate-700 border-slate-200';
+  }
+  return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+}

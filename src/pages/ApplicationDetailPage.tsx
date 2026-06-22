@@ -12,7 +12,7 @@ import {
   DataField,
   DataRow,
 } from '../components/ApplicationRecordPanel';
-import { STATUS_LABELS } from '../lib/applicationStatus';
+import { STATUS_LABELS, statusBadgeClasses } from '../lib/applicationStatus';
 
 interface AppDetail {
   id: string;
@@ -92,7 +92,7 @@ export default function ApplicationDetailPage() {
   const canEdit = app.status === 'DRAFT' || (app.status === 'APPLIED_UNVERIFIED' && app.editUnlocked);
 
   const statusBadge = (
-    <span className="inline-flex text-xs font-semibold px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-200">
+    <span className={`inline-flex text-xs font-semibold px-3 py-1.5 rounded-full border ${statusBadgeClasses(app.status)}`}>
       {STATUS_LABELS[app.status] || app.status.replace(/_/g, ' ')}
     </span>
   );

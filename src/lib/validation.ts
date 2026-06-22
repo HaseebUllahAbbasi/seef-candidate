@@ -26,6 +26,7 @@ export const profileSchema = z.object({
   lastName: z.string().min(2, 'Last name is required').max(50),
   cnic: z.string().regex(/^\d{5}-\d{7}-\d$/, 'Format: XXXXX-XXXXXXX-X').optional().or(z.literal('')),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
+  religion: z.string().min(1, 'Select religion').optional().or(z.literal('')),
   mobile: z.string().regex(MOBILE_REGEX).optional(),
 });
 

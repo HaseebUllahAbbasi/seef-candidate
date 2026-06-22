@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api, apiUpload } from '../lib/api';
 import { isApplicationLockedError } from '../lib/errors';
 import { canEditApplication } from '../lib/applicationAccess';
-import { STATUS_LABELS } from '../lib/applicationStatus';
+import { STATUS_LABELS, statusBadgeClasses } from '../lib/applicationStatus';
 import { autofillSampleDocuments, WIZARD_DOC_TYPES } from '../lib/sampleDocuments';
 import { SINDH_DISTRICTS } from '../lib/districts';
 import { RELIGIONS } from '../lib/religions';
@@ -14,6 +14,7 @@ import { FormField, inputClass, btnPrimary, Card } from '../components/ui';
 import DocumentPreview from '../components/DocumentPreview';
 import ApplicationLockedModal from '../components/ApplicationLockedModal';
 import StatusStepper from '../components/StatusStepper';
+import { useAuth } from '../context/AuthContext';
 
 const STEPS = ['Personal', 'Academic', 'Disability', 'Family', 'Financial', 'Documents', 'Review'];
 const DISTRICTS = SINDH_DISTRICTS;
@@ -90,6 +91,8 @@ const emptyProperty = (): PropertyForm => ({
 export default function ApplicationWizardPage() {
   const { adId, programId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const initStarted = useRef(false);
   const [step, setStep] = useState(0);
   const [appId, setAppId] = useState<string | null>(null);
   const [appStatus, setAppStatus] = useState<string | null>(null);
@@ -111,6 +114,8 @@ export default function ApplicationWizardPage() {
 
   useEffect(() => {
     if (!adId || !programId) return;
+    if (initStarted.current) return;
+    initStarted.current = true;
 
     let cancelled = false;
     setInitLoading(true);
@@ -131,16 +136,11 @@ export default function ApplicationWizardPage() {
 
         if (cancelled) return;
 
-        if (!canEditApplication(app)) {
-          setAppId(app.id);
-          setAppStatus(app.status);
-          return;
-        }
-
         setAppId(app.id);
         setAppStatus(app.status);
       } catch (e) {
         if (cancelled) return;
+        initStarted.current = false;
         setInitError((e as Error).message || 'Could not start application');
       } finally {
         if (!cancelled) setInitLoading(false);
@@ -178,6 +178,21 @@ export default function ApplicationWizardPage() {
           ...data.personal,
           dateOfBirth: data.personal.dateOfBirth?.slice(0, 10) || '',
         });
+      } else if (user) {
+        personalForm.reset({
+          fullName: user.fullName || '',
+          fatherName: '',
+          cnic: user.cnic || '',
+          dateOfBirth: '',
+          gender: (user.gender as PersonalForm['gender']) || 'MALE',
+          email: user.email,
+          mobile: user.mobile || '',
+          permanentAddress: '',
+          currentAddress: '',
+          district: '',
+          domicileDistrict: '',
+          religion: user.religion || '',
+        });
       }
       if (data.academic) academicForm.reset(data.academic);
       if (data.disability) disabilityForm.reset(data.disability);
@@ -200,7 +215,7 @@ export default function ApplicationWizardPage() {
       if (data.propertyAssets?.length) setProperties(data.propertyAssets as PropertyForm[]);
       if (data.documents) setDocuments(data.documents);
     }).catch(() => {});
-  }, [appId, isLockedView]);
+  }, [appId, isLockedView, user]);
 
   // Sync income rows when entering financial step
   useEffect(() => {
@@ -377,7 +392,7 @@ export default function ApplicationWizardPage() {
           <p className="text-slate-600 mt-2 max-w-xl leading-relaxed">
             You have already submitted this scholarship application. It is now under review and cannot be changed unless your university unlocks it for corrections.
           </p>
-          <p className="mt-4 inline-flex text-sm font-semibold px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-full border border-emerald-100">
+          <p className={`mt-4 inline-flex text-sm font-semibold px-3 py-1.5 rounded-full border ${statusBadgeClasses(appStatus)}`}>
             {STATUS_LABELS[appStatus] || appStatus.replace(/_/g, ' ')}
           </p>
           <div className="mt-6 bg-slate-50 rounded-xl p-4 border border-slate-100">
