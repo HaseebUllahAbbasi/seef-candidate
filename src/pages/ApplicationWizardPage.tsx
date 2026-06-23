@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api, apiUpload } from '../lib/api';
-import { isApplicationLockedError } from '../lib/errors';
+import { isApplicationLockedError, isApiError } from '../lib/errors';
+import { validateUploadFile, MAX_UPLOAD_LABEL } from '../lib/uploadValidation';
 import { canEditApplication } from '../lib/applicationAccess';
 import { STATUS_LABELS, statusBadgeClasses } from '../lib/applicationStatus';
 import { autofillSampleDocuments, WIZARD_DOC_TYPES } from '../lib/sampleDocuments';
@@ -99,6 +100,7 @@ export default function ApplicationWizardPage() {
   const [initError, setInitError] = useState('');
   const [lockedModalOpen, setLockedModalOpen] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [declared, setDeclared] = useState(false);
   const [members, setMembers] = useState<FamilyMemberForm[]>([emptyMember(), { ...emptyMember(), relationType: 'Mother', isWorking: false, employmentType: 'Housewife' }]);
   const [incomes, setIncomes] = useState<IncomeForm[]>([]);
@@ -326,7 +328,13 @@ export default function ApplicationWizardPage() {
 
   const uploadDoc = async (type: string, file: File) => {
     if (!appId) return;
+    const validationError = validateUploadFile(file);
+    if (validationError) {
+      setActionError(validationError);
+      return;
+    }
     setActionError('');
+    setUploadingDoc(type);
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -337,7 +345,13 @@ export default function ApplicationWizardPage() {
         return [...filtered, doc];
       });
     } catch (e) {
-      handleLockedError(e);
+      if (isApplicationLockedError(e)) {
+        handleLockedError(e);
+      } else {
+        setActionError(isApiError(e) ? e.message : (e as Error).message);
+      }
+    } finally {
+      setUploadingDoc(null);
     }
   };
 
@@ -642,21 +656,32 @@ export default function ApplicationWizardPage() {
 
         {step === 5 && (
           <div className="space-y-6">
-            <p className="text-sm text-slate-600">Upload a file from your device or paste a public link (e.g. sample PDF/image URL).</p>
+            <p className="text-sm text-slate-600">
+              Upload a file from your device (PDF or image, max {MAX_UPLOAD_LABEL}) or paste a public link.
+            </p>
             {DOC_TYPES.map((type) => {
               const uploaded = documents.find((d) => d.type === type);
+              const isUploading = uploadingDoc === type;
               return (
                 <div key={type} className="border border-slate-200 rounded-xl p-4 space-y-3">
                   <label className="text-sm font-medium text-slate-800">{type.replace(/_/g, ' ')}</label>
                   <input
                     type="file"
-                    accept="image/*,.pdf"
-                    className="block text-sm w-full"
+                    accept="image/*,.pdf,.doc,.docx"
+                    disabled={isUploading}
+                    className="block text-sm w-full disabled:opacity-50"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) uploadDoc(type, file);
+                      e.target.value = '';
                     }}
                   />
+                  {isUploading && (
+                    <p className="text-xs text-emerald-700 flex items-center gap-2">
+                      <span className="w-3 h-3 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                      Uploading…
+                    </p>
+                  )}
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="url"

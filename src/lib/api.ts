@@ -1,4 +1,5 @@
 import { ApiError } from './errors';
+import { uploadErrorMessage } from './uploadValidation';
 
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
 
@@ -45,7 +46,8 @@ export async function apiUpload<T>(path: string, formData: FormData): Promise<T>
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new ApiError(data.error || 'Upload failed', data.code, data);
+    const message = data.error || uploadErrorMessage({ code: data.code, message: data.error });
+    throw new ApiError(message, data.code, data);
   }
   return data as T;
 }
