@@ -8,6 +8,7 @@ import { STATUS_LABELS } from '../lib/applicationStatus';
 import CountdownTimer from '../components/CountdownTimer';
 import { SINDH_DISTRICTS } from '../lib/districts';
 import { btnPrimary } from '../components/ui';
+import { uploadUrl } from '../lib/uploads';
 
 interface AdDetail {
   id: string;
@@ -18,7 +19,10 @@ interface AdDetail {
   minCgpa?: number;
   province?: string;
   eligibleDistricts?: string[];
+  eligibleCriteria?: string;
   ineligibleCriteria: string;
+  documentUrl?: string | null;
+  documentFileName?: string | null;
   status: string;
   programs: { id: string; programName: string; description?: string }[];
   quotas?: { seats: number; university?: { id: string; name: string } }[];
@@ -88,6 +92,9 @@ export default function AdvertisementDetailPage({ publicMode = false }: Props) {
     ? 'All districts of Sindh'
     : ad.eligibleDistricts.join(', ');
 
+  const docHref = ad.documentUrl ? uploadUrl(ad.documentUrl) : undefined;
+  const isImageDoc = ad.documentFileName && /\.(jpe?g|png|gif|webp)$/i.test(ad.documentFileName);
+
   const statusLabel = existing
     ? (STATUS_LABELS[existing.status] || 'Applied')
     : (isOpen ? 'Open for applications' : 'Closed');
@@ -156,18 +163,59 @@ export default function AdvertisementDetailPage({ publicMode = false }: Props) {
         <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
           <section className="px-6 py-6 md:py-7">
             <SectionHeading>Eligibility</SectionHeading>
-            <ul className="text-sm text-slate-600 space-y-2 leading-relaxed">
-              <li><strong className="text-slate-800">Minimum CGPA:</strong> {ad.minCgpa?.toFixed(1) ?? '—'}</li>
-              <li><strong className="text-slate-800">Province:</strong> {ad.province ?? 'Sindh'}</li>
-              <li><strong className="text-slate-800">Districts:</strong> {districtSummary}</li>
-              <li>Enrolled in an HEC-recognized university in Sindh</li>
-            </ul>
+            {ad.eligibleCriteria ? (
+              <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{ad.eligibleCriteria}</p>
+            ) : (
+              <ul className="text-sm text-slate-600 space-y-2 leading-relaxed">
+                <li><strong className="text-slate-800">Minimum CGPA:</strong> {ad.minCgpa?.toFixed(1) ?? '—'}</li>
+                <li><strong className="text-slate-800">Province:</strong> {ad.province ?? 'Sindh'}</li>
+                <li><strong className="text-slate-800">Districts:</strong> {districtSummary}</li>
+                <li>Enrolled in an HEC-recognized university in Sindh</li>
+              </ul>
+            )}
+            <dl className="mt-4 text-sm text-slate-600 space-y-1.5 pt-4 border-t border-slate-100">
+              <div><dt className="inline font-semibold text-slate-800">Min CGPA: </dt><dd className="inline">{ad.minCgpa?.toFixed(1) ?? '—'}</dd></div>
+              <div><dt className="inline font-semibold text-slate-800">Districts: </dt><dd className="inline">{districtSummary}</dd></div>
+            </dl>
           </section>
           <section className="px-6 py-6 md:py-7">
             <SectionHeading>Ineligibility</SectionHeading>
             <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{ad.ineligibleCriteria}</p>
           </section>
         </div>
+
+        {docHref && (
+          <section className="border-t border-slate-200 px-6 py-6 bg-slate-50/40">
+            <SectionHeading>Official advertisement</SectionHeading>
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
+              {isImageDoc && (
+                <a href={docHref} target="_blank" rel="noreferrer" className="block shrink-0">
+                  <img
+                    src={docHref}
+                    alt="Official advertisement"
+                    className="max-w-full sm:max-w-xs rounded-lg border border-slate-200 shadow-sm"
+                  />
+                </a>
+              )}
+              <div>
+                <p className="text-sm text-slate-600 mb-3">
+                  {ad.documentFileName ?? 'Download the official advertisement document for full details.'}
+                </p>
+                <a
+                  href={docHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  View advertisement
+                </a>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="border-t border-slate-200 bg-slate-50/30">
           <div className="px-6 pt-6 pb-4">
