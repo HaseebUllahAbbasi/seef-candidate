@@ -188,7 +188,6 @@ export default function ApplicationWizardPage() {
           permanentAddress: '',
           currentAddress: '',
           district: '',
-          domicileDistrict: '',
           religion: user.religion || '',
         });
       }
@@ -250,7 +249,6 @@ export default function ApplicationWizardPage() {
         permanentAddress: 'House No. 45, Main Road, Latifabad, Hyderabad, Sindh',
         currentAddress: 'House No. 45, Main Road, Latifabad, Hyderabad, Sindh',
         district: 'Hyderabad',
-        domicileDistrict: 'Hyderabad',
         religion: 'Islam',
       });
     } else if (step === 1) {
@@ -291,11 +289,20 @@ export default function ApplicationWizardPage() {
       if (step === 0) {
         const valid = await personalForm.trigger();
         if (!valid) return;
-        await api(`/applications/${appId}/personal`, { method: 'PUT', body: JSON.stringify(personalForm.getValues()) });
+        await api(`/applications/${appId}/personal`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            ...personalForm.getValues(),
+            domicileDistrict: personalForm.getValues('district'),
+          }),
+        });
       } else if (step === 1) {
         const valid = await academicForm.trigger();
         if (!valid) return;
-        await api(`/applications/${appId}/academic`, { method: 'PUT', body: JSON.stringify(academicForm.getValues()) });
+        await api(`/applications/${appId}/academic`, {
+          method: 'PUT',
+          body: JSON.stringify({ ...academicForm.getValues(), cgpa: Number(academicForm.getValues('cgpa')) }),
+        });
       } else if (step === 2) {
         await api(`/applications/${appId}/disability`, { method: 'PUT', body: JSON.stringify(disabilityForm.getValues()) });
       } else if (step === 3) {
@@ -479,15 +486,9 @@ export default function ApplicationWizardPage() {
             </FormField>
             <FormField label="Email" error={personalForm.formState.errors.email} required><input {...personalForm.register('email')} className={inputClass()} /></FormField>
             <FormField label="Mobile" error={personalForm.formState.errors.mobile} required><input {...personalForm.register('mobile')} className={inputClass()} /></FormField>
-            <FormField label="District" required>
-              <select {...personalForm.register('district')} className={inputClass()}>
-                <option value="">Select</option>
-                {DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </FormField>
-            <FormField label="Domicile District" required>
-              <select {...personalForm.register('domicileDistrict')} className={inputClass()}>
-                <option value="">Select</option>
+            <FormField label="District" error={personalForm.formState.errors.district} required>
+              <select {...personalForm.register('district')} className={inputClass(!!personalForm.formState.errors.district)}>
+                <option value="">Select district</option>
                 {DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </FormField>

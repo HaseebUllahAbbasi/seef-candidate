@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../lib/api';
+import { api, getToken } from '../lib/api';
 
 export interface MyApplication {
   id: string;
@@ -17,6 +17,11 @@ export function useMyApplications() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!getToken()) {
+      setApps([]);
+      setLoading(false);
+      return;
+    }
     api<MyApplication[]>('/applications/mine')
       .then(setApps)
       .catch(() => setApps([]))

@@ -29,7 +29,7 @@ export default function DashboardPage() {
             <p className="font-medium text-amber-900">Complete your profile</p>
             <p className="text-sm text-amber-800 mt-0.5">Add your name, CNIC, and gender before applying for scholarships.</p>
           </div>
-          <Link to="/profile" className="shrink-0 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 text-center">
+          <Link to="/profile" className="shrink-0 px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 text-center shadow-sm">
             Go to Profile
           </Link>
         </div>

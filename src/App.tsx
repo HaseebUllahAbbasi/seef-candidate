@@ -15,6 +15,7 @@ import AdvertisementDetailPage from './pages/AdvertisementDetailPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
+import PublicScholarshipDetailPage from './pages/PublicScholarshipDetailPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ export default function App() {
           {/* Public */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/scholarships" element={<ScholarshipsPublicPage />} />
+          <Route path="/scholarship/:id" element={<PublicScholarshipDetailPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
           <Route path="/register" element={<PublicOnly><RegisterPage /></PublicOnly>} />

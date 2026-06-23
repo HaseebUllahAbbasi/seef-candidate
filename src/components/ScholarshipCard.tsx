@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { canEditApplication } from '../lib/applicationAccess';
 import { STATUS_LABELS, statusBadgeClasses } from '../lib/applicationStatus';
+import { btnPrimary } from './ui';
 
 export interface ScholarshipAd {
   id: string;
   name: string;
   year: number;
-  catchyLine?: string;
   endDate: string;
+  minCgpa?: number;
   status?: string;
   programs?: { id: string; programName: string }[];
 }
@@ -28,6 +29,7 @@ interface Props {
   detailHref?: string;
   hidePrograms?: boolean;
   existingApplication?: ExistingApplication;
+  publicView?: boolean;
 }
 
 export default function ScholarshipCard({
@@ -39,24 +41,34 @@ export default function ScholarshipCard({
   detailHref,
   hidePrograms = false,
   existingApplication,
+  publicView = false,
 }: Props) {
   const deadline = new Date(ad.endDate);
   const daysLeft = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   const isOpen = daysLeft > 0;
   const canEdit = existingApplication ? canEditApplication(existingApplication) : false;
+  const firstProgramId = ad.programs?.[0]?.id;
+  const applyPath = applyHref ?? (firstProgramId ? `/apply/${ad.id}/${firstProgramId}` : applyBasePath);
   const continueHref = existingApplication
     ? `/apply/${ad.id}/${existingApplication.programId}`
-    : applyHref;
+    : applyPath;
 
   const body = (
     <>
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400" />
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400" />
       <div className="p-6 flex flex-col flex-1">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-            {ad.year} Session
-          </span>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+              {ad.year}
+            </span>
+            {ad.minCgpa != null && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 px-2 py-1 rounded-md border border-slate-200">
+                Min CGPA {ad.minCgpa.toFixed(1)}
+              </span>
+            )}
+          </div>
+          <span className={`text-[10px] font-semibold px-2 py-1 rounded-md border shrink-0 ${
             existingApplication
               ? statusBadgeClasses(existingApplication.status)
               : (isOpen ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200')
@@ -67,12 +79,9 @@ export default function ScholarshipCard({
           </span>
         </div>
 
-        <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-800 transition-colors leading-snug">
+        <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-800 transition-colors leading-snug line-clamp-2">
           {ad.name}
         </h3>
-        {ad.catchyLine && (
-          <p className="text-sm text-slate-500 mt-2 line-clamp-2">{ad.catchyLine}</p>
-        )}
 
         {existingApplication && (
           <p className="mt-3 text-xs text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
@@ -86,60 +95,51 @@ export default function ScholarshipCard({
           </svg>
           <span>Deadline: <strong className="text-slate-700">{deadline.toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}</strong></span>
           {isOpen && daysLeft <= 30 && (
-            <span className="text-amber-600 font-medium">· {daysLeft} days left</span>
+            <span className="text-amber-600 font-medium">· {daysLeft}d left</span>
           )}
         </div>
 
         {!hidePrograms && ad.programs && ad.programs.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
-            {ad.programs.slice(0, 4).map((p) => (
-              <span key={p.id} className="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+            {ad.programs.slice(0, 3).map((p) => (
+              <span key={p.id} className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md border border-slate-200/80">
                 {p.programName}
               </span>
             ))}
-            {ad.programs.length > 4 && (
-              <span className="text-[11px] px-2 py-0.5 text-slate-400">+{ad.programs.length - 4} more</span>
+            {ad.programs.length > 3 && (
+              <span className="text-[10px] px-2 py-0.5 text-slate-400">+{ad.programs.length - 3}</span>
             )}
           </div>
         )}
 
         {showAction && (
-          <div className="mt-auto pt-5 flex flex-col sm:flex-row gap-2">
+          <div className="mt-auto pt-5 flex flex-col gap-2">
             {detailHref && (
               <Link
                 to={detailHref}
-                className="inline-flex items-center justify-center flex-1 gap-2 px-4 py-2.5 border border-emerald-200 text-emerald-800 bg-white text-sm font-semibold rounded-xl hover:bg-emerald-50 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-emerald-200 text-emerald-800 bg-white text-sm font-semibold rounded-xl hover:bg-emerald-50 transition-colors"
               >
                 View details
               </Link>
             )}
             {existingApplication ? (
               <>
-                <Link
-                  to={`/application/${existingApplication.id}`}
-                  className="inline-flex items-center justify-center flex-1 gap-2 px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 transition-colors shadow-sm shadow-emerald-600/20"
-                >
-                  Track Progress
+                <Link to={`/application/${existingApplication.id}`} className={`${btnPrimary()} text-center py-2.5 rounded-xl font-semibold text-sm`}>
+                  Track progress
                 </Link>
                 {canEdit && continueHref && (
-                  <Link
-                    to={continueHref}
-                    className="inline-flex items-center justify-center flex-1 gap-2 px-4 py-2.5 border border-emerald-600 text-emerald-800 bg-white text-sm font-semibold rounded-xl hover:bg-emerald-50 transition-colors"
-                  >
+                  <Link to={continueHref} className="text-center py-2.5 rounded-xl border border-emerald-600 text-emerald-800 text-sm font-semibold hover:bg-emerald-50 transition-colors">
                     {existingApplication.status === 'DRAFT' ? 'Continue draft' : 'Update application'}
                   </Link>
                 )}
               </>
             ) : (
-              (applyHref || applyBasePath) && isOpen && (
+              isOpen && applyPath && (
                 <Link
-                  to={applyHref || applyBasePath}
-                  className="inline-flex items-center justify-center flex-1 gap-2 px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 transition-colors shadow-sm shadow-emerald-600/20"
+                  to={publicView && applyPath.startsWith('/apply') ? `/login?redirect=${encodeURIComponent(applyPath)}` : applyPath}
+                  className={`${btnPrimary()} text-center py-2.5 rounded-xl font-semibold text-sm shadow-sm shadow-emerald-600/15`}
                 >
-                  Apply now
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
+                  {publicView ? 'Login to apply' : 'Apply now'}
                 </Link>
               )
             )}
@@ -149,7 +149,7 @@ export default function ScholarshipCard({
     </>
   );
 
-  const className = `group relative bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all duration-300 overflow-hidden ${variant === 'landing' ? 'flex flex-col h-full' : ''}`;
+  const className = `group relative bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden ${variant === 'landing' ? 'flex flex-col h-full' : ''}`;
 
   return <article className={className}>{body}</article>;
 }

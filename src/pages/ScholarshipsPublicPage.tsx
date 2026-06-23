@@ -27,8 +27,6 @@ export default function ScholarshipsPublicPage() {
     return true;
   });
 
-  const applyPath = user ? '/advertisements' : '/login';
-
   return (
     <PublicLayout>
       <div className="bg-gradient-to-b from-emerald-50 to-slate-50 py-12 md:py-16">
@@ -70,7 +68,13 @@ export default function ScholarshipsPublicPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map((ad) => (
-                <ScholarshipCard key={ad.id} ad={ad} applyBasePath={applyPath} />
+                <ScholarshipCard
+                  key={ad.id}
+                  ad={ad}
+                  publicView
+                  detailHref={`/scholarship/${ad.id}`}
+                  applyBasePath="/login"
+                />
               ))}
             </div>
           )}

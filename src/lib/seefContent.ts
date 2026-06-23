@@ -68,7 +68,7 @@ export const DEMO_SCHOLARSHIPS = [
     id: 'demo-1',
     name: 'SEEF Merit Scholarship',
     year: new Date().getFullYear(),
-    catchyLine: "Investing in Sindh's Future — Education for All",
+    minCgpa: 2.2,
     endDate: `${new Date().getFullYear()}-12-31`,
     status: 'PUBLISHED',
     programs: [
@@ -81,7 +81,7 @@ export const DEMO_SCHOLARSHIPS = [
     id: 'demo-2',
     name: 'SEEF Need-Based Scholarship',
     year: new Date().getFullYear(),
-    catchyLine: 'Supporting deserving students across Sindh',
+    minCgpa: 2.2,
     endDate: `${new Date().getFullYear()}-09-30`,
     status: 'PUBLISHED',
     programs: [

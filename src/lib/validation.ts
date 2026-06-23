@@ -48,8 +48,7 @@ export const personalSchema = z.object({
   mobile: z.string().regex(MOBILE_REGEX, 'Invalid mobile format'),
   permanentAddress: z.string().min(5).max(500),
   currentAddress: z.string().max(500).optional(),
-  district: z.string().min(1),
-  domicileDistrict: z.string().min(1),
+  district: z.string().min(1, 'Select district'),
   religion: z.string().min(1, 'Select religion'),
 });
 

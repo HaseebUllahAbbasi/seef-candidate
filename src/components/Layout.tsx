@@ -29,7 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex bg-slate-50">
-      <aside className="hidden md:flex w-60 bg-emerald-950 text-emerald-100 flex-col shrink-0">
+      <aside className="hidden md:flex w-60 h-screen max-h-screen sticky top-0 bg-emerald-950 text-emerald-100 flex-col shrink-0">
         <div className="px-5 py-6 border-b border-emerald-900">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-emerald-700 flex items-center justify-center text-lg">🎓</div>
@@ -39,7 +39,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-        <nav className="flex-1 p-3">
+        <nav className="flex-1 p-3 overflow-y-auto min-h-0">
           {NAV.map((item) => {
             const active = location.pathname === item.path;
             const badge = item.badge && unread > 0 ? unread : 0;
@@ -63,7 +63,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         {user && (
-          <div className="p-4 border-t border-emerald-900">
+          <div className="p-4 border-t border-emerald-900 shrink-0 mt-auto">
             <div className="flex items-center gap-2.5 mb-2">
               <img src={userAvatar(user)} alt="" className="w-9 h-9 rounded-full bg-white/10 ring-2 ring-emerald-700" />
               <div className="min-w-0">

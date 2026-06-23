@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,8 @@ interface Uni {
 export default function RegisterPage() {
   const { registerStart, registerVerify } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/profile';
   const [unis, setUnis] = useState<Uni[]>([]);
   const [error, setError] = useState('');
   const [verifyInfo, setVerifyInfo] = useState<{
@@ -94,7 +96,7 @@ export default function RegisterPage() {
             </div>
             <p className="text-sm text-slate-500">
               Already registered?{' '}
-              <Link to="/login" className="text-emerald-700 font-semibold hover:underline">Sign in</Link>
+              <Link to={redirect.startsWith('/') ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'} className="text-emerald-700 font-semibold hover:underline">Sign in</Link>
             </p>
           </aside>
 
@@ -172,7 +174,7 @@ export default function RegisterPage() {
           onClose={() => setVerifyInfo(null)}
           onVerify={async (method, code) => {
             await registerVerify(verifyInfo.pendingId, method, code);
-            navigate('/profile', { state: { welcome: true } });
+            navigate(redirect, { state: { welcome: true } });
           }}
         />
       )}
