@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../context/AuthContext';
 import { loginSchema, LoginForm } from '../lib/validation';
 import PublicLayout from '../components/PublicLayout';
+import SeefLogo from '../components/SeefLogo';
 import { FormField, inputClass, btnPrimary } from '../components/ui';
 import { SEEF } from '../lib/seefContent';
 
@@ -19,6 +20,8 @@ const STEPS = [
   { n: '1', title: 'Register', desc: 'University email + verification' },
   { n: '2', title: 'Complete profile', desc: 'Name, CNIC, and gender' },
   { n: '3', title: 'Apply', desc: 'Submit scholarship application' },
+  { n: '4', title: 'Track', desc: 'Application status and notifications' },
+  { n: '5', title: 'Get Awarded', desc: 'Get your scholarship award' },
 ];
 
 export default function LoginPage() {
@@ -70,18 +73,17 @@ export default function LoginPage() {
 
           <div className="w-full max-w-md mx-auto lg:ml-auto">
             <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 p-7 md:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center text-white text-xs font-bold shadow-md">
-                  SEEF
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">Welcome back</h2>
-                  <p className="text-xs text-slate-500">Use university email or username</p>
-                </div>
+              <div className="mb-6">
+                <SeefLogo variant="mark" size="display" />
+                <h2 className="text-xl font-bold text-slate-900 mt-4">Welcome back</h2>
+                <p className="text-xs text-slate-500 mt-1">Use university email or username</p>
               </div>
 
               {error && (
-                <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100">{error}</div>
+                <div className="mb-4 flex gap-3 p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100">
+                  <SeefLogo variant="mark" size="sm" className="shrink-0" />
+                  <p className="min-w-0 leading-relaxed">{error}</p>
+                </div>
               )}
 
               <form

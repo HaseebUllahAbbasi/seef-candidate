@@ -6,10 +6,10 @@ import { FOOTER_HELPFUL_LINKS, FOOTER_QUICK_LINKS } from '../lib/landingContent'
 
 const NAV = [
   { path: '/', label: 'Home' },
-  { path: '/#about', label: 'About Us' },
-  { path: '/#programs', label: 'Our Programs' },
+  { path: '/about', label: 'About Us' },
   { path: '/scholarships', label: 'Scholarships' },
-  { path: '/#news', label: 'News & Events' },
+  { path: '/universities', label: 'Universities' },
+  { path: '/news', label: 'News & Events' },
   { path: '/contact', label: 'Contact Us' },
 ];
 
@@ -61,9 +61,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* Main header */}
       <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <Link to="/" className="shrink-0 min-w-0">
-            <SeefLogo />
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
+          <Link to="/" className="shrink-0 min-w-0 leading-none">
+            <SeefLogo variant="full" size="header" />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
@@ -114,7 +114,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <footer className="bg-[#0a2e1c] text-slate-300">
         <div className="max-w-7xl mx-auto px-4 py-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           <div>
-            <SeefLogo variant="light" />
+            <SeefLogo variant="full" size="lg" />
             <p className="mt-4 text-sm leading-relaxed text-slate-400">
               Empowering students across Sindh through merit and need-based scholarships at HEC-recognized institutions.
             </p>

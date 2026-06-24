@@ -82,7 +82,10 @@ export default function RegisterPage() {
               <ul className="space-y-2.5 text-sm text-slate-600">
                 <li className="flex gap-2">
                   <span className="text-emerald-600">✓</span>
-                  SEEF panel university in Sindh
+                  <span>
+                    SEEF panel university in Sindh —{' '}
+                    <Link to="/universities" className="text-emerald-700 font-medium hover:underline">check the list</Link>
+                  </span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-emerald-600">✓</span>
@@ -133,7 +136,7 @@ export default function RegisterPage() {
                 })}
                 className="space-y-4"
               >
-                <FormField label="University" error={errors.universityId} required hint="Select your enrolled university">
+                <FormField label="University" error={errors.universityId} required hint={<>Select your enrolled university. <Link to="/universities" className="text-emerald-700 font-medium hover:underline">Browse full panel list</Link></>}>
                   <select {...register('universityId')} className={selectClass(!!errors.universityId)}>
                     <option value="">Choose university...</option>
                     {sortedUnis.map((u) => (

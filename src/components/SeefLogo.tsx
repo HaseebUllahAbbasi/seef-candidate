@@ -1,28 +1,77 @@
+type LogoVariant = 'full' | 'mark';
+type LogoSize = 'sm' | 'md' | 'lg' | 'xl' | 'header' | 'display';
+
+/** Mark logos scale by height; full wordmark scales by width so text stays legible without a tall header. */
+const MARK_HEIGHT: Record<Exclude<LogoSize, 'header' | 'display'>, string> = {
+  sm: 'h-8',
+  md: 'h-10',
+  lg: 'h-12',
+  xl: 'h-14',
+};
+
+const FULL_WIDTH: Record<Exclude<LogoSize, 'header' | 'display'>, string> = {
+  sm: 'w-28',
+  md: 'w-36 sm:w-40',
+  lg: 'w-44 sm:w-48',
+  xl: 'w-52 sm:w-56',
+};
+
+/** Sticky header — readable wordmark in a compact row (not full 300px layout height). */
+const HEADER_FULL = {
+  box: 'inline-flex h-20 w-[12rem] sm:w-[13rem] items-center overflow-hidden',
+  image: 'block w-full h-auto shrink-0',
+};
+
+/** Prominent mark (login, hero) — fixed 300px height (readable, less than 400px test). */
+const DISPLAY_MARK = 'block w-auto h-[300px] max-w-full object-contain object-left';
+
 interface Props {
+  variant?: LogoVariant;
+  size?: LogoSize;
   className?: string;
+  alt?: string;
+  /** @deprecated use variant="mark" */
   showText?: boolean;
-  variant?: 'light' | 'dark';
+  /** @deprecated ignored — logos are transparent PNGs */
+  onDark?: boolean;
+  /** @deprecated ignored */
+  theme?: 'light' | 'dark';
 }
 
-export default function SeefLogo({ className = '', showText = true, variant = 'dark' }: Props) {
-  const textClass = variant === 'light' ? 'text-white' : 'text-slate-900';
-  const subClass = variant === 'light' ? 'text-emerald-200' : 'text-slate-500';
+export default function SeefLogo({
+  variant,
+  size = 'md',
+  className = '',
+  alt = 'Sindh Education Endowment Foundation',
+  showText,
+}: Props) {
+  const resolvedVariant = variant ?? (showText === false ? 'mark' : 'full');
+  const src = resolvedVariant === 'full' ? '/seef-logo-full.png' : '/seef-logo-mark.png';
+
+  if (size === 'header' && resolvedVariant === 'full') {
+    return (
+      <span className={`${HEADER_FULL.box} ${className}`}>
+        <img src={src} alt={alt} className={HEADER_FULL.image} />
+      </span>
+    );
+  }
+
+  if (size === 'display' && resolvedVariant === 'mark') {
+    return (
+      <img src={src} alt={alt} className={`${DISPLAY_MARK} ${className}`} />
+    );
+  }
+
+  const resolvedSize = size === 'header' || size === 'display' ? 'md' : size;
+  const imgClass = resolvedVariant === 'full'
+    ? `block ${FULL_WIDTH[resolvedSize]} h-auto object-contain object-left`
+    : `block w-auto object-contain object-left ${MARK_HEIGHT[resolvedSize]}`;
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-800 flex items-center justify-center shadow-md shrink-0 ring-2 ring-white/20">
-        <svg viewBox="0 0 32 32" className="w-7 h-7 text-white" fill="currentColor" aria-hidden>
-          <path d="M16 3C10 3 5 7 4 12c-1 5 3 9 8 10v3l4-2v-2c5-1 9-5 8-10-1-5-6-9-12-9zm0 6c2.2 0 4 1.8 4 4s-1.8 4-4 4-4-1.8-4-4 1.8-4 4-4z" />
-        </svg>
-      </div>
-      {showText && (
-        <div className="leading-tight min-w-0">
-          <p className={`font-bold text-sm sm:text-[15px] ${textClass} truncate`}>
-            Sindh Education Endowment Foundation
-          </p>
-          <p className={`text-[10px] uppercase tracking-wider ${subClass}`}>Government of Sindh</p>
-        </div>
-      )}
-    </div>
+    <img
+      src={src}
+      alt={alt}
+      className={`${imgClass} ${className}`}
+    />
   );
 }

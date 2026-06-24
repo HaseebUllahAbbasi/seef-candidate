@@ -5,7 +5,7 @@ import ScholarshipCard, { ScholarshipAd } from '../components/ScholarshipCard';
 import { api } from '../lib/api';
 import { DEMO_SCHOLARSHIPS } from '../lib/seefContent';
 import {
-  FEATURES, HERO_SLIDES, IMPACT_STATS, NEWS_ITEMS, PROGRAMS, TESTIMONIALS,
+  FEATURES, HERO_SLIDES, IMPACT_STATS, NEWS_ITEMS, SCHOLARSHIP_PROCESS, TESTIMONIALS,
 } from '../lib/landingContent';
 
 function FeatureIcon({ name }: { name: string }) {
@@ -59,15 +59,17 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 min-h-[520px]">
             <div className="px-6 md:px-10 py-14 lg:py-20 flex flex-col justify-center z-10">
-              <p className="text-emerald-300 text-xs font-bold uppercase tracking-[0.18em] mb-4">{hero.tag}</p>
-              <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold leading-tight tracking-tight">{hero.title}</h1>
-              <p className="mt-5 text-emerald-100/90 text-base leading-relaxed max-w-lg">{hero.description}</p>
+              <div key={heroIdx} className="transition-opacity duration-500">
+                <p className="text-emerald-300 text-xs font-bold uppercase tracking-[0.18em] mb-4">{hero.tag}</p>
+                <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold leading-tight tracking-tight">{hero.title}</h1>
+                <p className="mt-5 text-emerald-100/90 text-base leading-relaxed max-w-lg">{hero.description}</p>
+              </div>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/register" className="px-6 py-3.5 bg-[#4CAF50] hover:bg-[#43a047] text-white font-bold rounded-md shadow-lg shadow-black/20 transition-colors">
                   Apply for Scholarship
                 </Link>
-                <Link to="/#programs" className="px-6 py-3.5 border-2 border-white/50 text-white font-semibold rounded-md hover:bg-white/10 transition-colors">
-                  Explore Programs
+                <Link to="/scholarships" className="px-6 py-3.5 border-2 border-white/50 text-white font-semibold rounded-md hover:bg-white/10 transition-colors">
+                  View Scholarships
                 </Link>
               </div>
               <div className="mt-10 flex gap-2">
@@ -85,12 +87,27 @@ export default function LandingPage() {
 
             <div className="relative min-h-[280px] lg:min-h-0 p-4 lg:p-6 flex items-center justify-center">
               <div className="relative w-full max-w-lg aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
-                <img src="/landing/hero-collage.jpg" alt="Students supported by SEEF scholarships" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a3d28]/60 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                  <span className="px-3 py-1.5 bg-emerald-600/90 backdrop-blur text-white text-xs font-semibold rounded-lg">Interview Panel</span>
-                  <span className="px-3 py-1.5 bg-white/90 text-emerald-900 text-xs font-semibold rounded-lg">Getting Scholarships</span>
-                </div>
+                {HERO_SLIDES.map((slide, i) => (
+                  <img
+                    key={slide.image}
+                    src={slide.image}
+                    alt={slide.imageAlt}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
+                      i === heroIdx ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                ))}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a3d28]/60 via-transparent to-transparent pointer-events-none" />
+                {hero.badges && (
+                  <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
+                    <span className="px-3 py-1.5 bg-emerald-600/90 backdrop-blur text-white text-xs font-semibold rounded-lg">
+                      {hero.badges[0]}
+                    </span>
+                    <span className="px-3 py-1.5 bg-white/90 text-emerald-900 text-xs font-semibold rounded-lg">
+                      {hero.badges[1]}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="absolute -top-4 -right-4 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl" />
             </div>
@@ -115,8 +132,36 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Impact */}
-      <section className="py-16 md:py-20 bg-slate-50" id="about">
+      {/* Scholarship process */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <SectionTag>SEEF Scholarship Process</SectionTag>
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900">How to Apply</h2>
+            <p className="text-slate-500 mt-2 max-w-2xl mx-auto">
+              Simple process. Transparent journey. Brighter future.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-8 shadow-sm">
+            <img
+              src={SCHOLARSHIP_PROCESS.image}
+              alt={SCHOLARSHIP_PROCESS.imageAlt}
+              className="w-full h-auto"
+            />
+          </div>
+          <div className="mt-8 text-center">
+            <Link
+              to="/register"
+              className="inline-flex px-6 py-3 bg-[#4CAF50] hover:bg-[#43a047] text-white font-bold rounded-md shadow-md transition-colors"
+            >
+              Start your application
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Impact teaser → About */}
+      <section className="py-16 md:py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <SectionTag>Our Impact</SectionTag>
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Making a Difference Every Day</h2>
@@ -131,38 +176,9 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Programs */}
-      <section className="py-16 md:py-20 bg-white" id="programs">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
-            <div>
-              <SectionTag>Our Programs</SectionTag>
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Empowering Through Education</h2>
-            </div>
-            <Link to="/scholarships" className="text-emerald-700 font-semibold hover:underline shrink-0">View All Programs →</Link>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {PROGRAMS.map((p) => (
-              <article key={p.title} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all">
-                <div className="relative h-44 overflow-hidden">
-                  <img src={p.image} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute -bottom-5 left-5 w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg ring-4 ring-white">
-                    <FeatureIcon name={p.icon} />
-                  </div>
-                </div>
-                <div className="p-5 pt-8">
-                  <h3 className="font-bold text-slate-900">{p.title}</h3>
-                  <p className="text-sm text-slate-500 mt-2 leading-relaxed line-clamp-3">{p.description}</p>
-                  <Link to={p.href} className="inline-flex items-center gap-1 mt-4 text-sm font-semibold text-emerald-700 hover:text-emerald-900">
-                    Learn More <span aria-hidden>→</span>
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
+          <Link to="/about" className="inline-block mt-10 text-emerald-700 font-semibold hover:underline">
+            Learn more about SEEF →
+          </Link>
         </div>
       </section>
 
@@ -204,30 +220,31 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* News */}
-      <section className="py-16 md:py-20 bg-white" id="news">
+      {/* News teaser */}
+      <section className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
             <div>
               <SectionTag>News & Events</SectionTag>
               <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Stay Updated with SEEF</h2>
             </div>
-            <Link to="/contact" className="text-emerald-700 font-semibold hover:underline">View All News →</Link>
+            <Link to="/news" className="text-emerald-700 font-semibold hover:underline">View all news →</Link>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {NEWS_ITEMS.map((n) => (
-              <article key={n.title} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:border-emerald-200 transition-all bg-white">
+            {NEWS_ITEMS.slice(0, 4).map((n) => (
+              <article key={n.id} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:border-emerald-200 transition-all bg-white">
                 <div className="h-40 overflow-hidden">
                   <img src={n.image} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
                 <div className="p-5">
                   <p className="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
-                    <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span className="font-semibold text-emerald-700">{n.category}</span>
+                    <span>·</span>
                     {n.date}
                   </p>
                   <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">{n.title}</h3>
                   <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">{n.excerpt}</p>
-                  <Link to="/contact" className="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-emerald-700 hover:underline">Read More →</Link>
+                  <Link to="/news" className="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-emerald-700 hover:underline">Read more →</Link>
                 </div>
               </article>
             ))}

@@ -16,6 +16,9 @@ import ApplicationDetailPage from './pages/ApplicationDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
 import PublicScholarshipDetailPage from './pages/PublicScholarshipDetailPage';
+import UniversitiesPublicPage from './pages/UniversitiesPublicPage';
+import AboutPage from './pages/AboutPage';
+import NewsPage from './pages/NewsPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -46,8 +49,11 @@ export default function App() {
           {/* Public */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/scholarships" element={<ScholarshipsPublicPage />} />
-          <Route path="/scholarship/:id" element={<PublicScholarshipDetailPage />} />
+          <Route path="/universities" element={<UniversitiesPublicPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/news" element={<NewsPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/scholarship/:id" element={<PublicScholarshipDetailPage />} />
           <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
           <Route path="/register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
           <Route path="/register/verify/:token" element={<RegisterVerifyPage />} />

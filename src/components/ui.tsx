@@ -1,6 +1,6 @@
 import { FieldError } from 'react-hook-form';
 
-export function FormField({ label, error, required, hint, children }: { label: string; error?: FieldError; required?: boolean; hint?: string; children: React.ReactNode }) {
+export function FormField({ label, error, required, hint, children }: { label: string; error?: FieldError; required?: boolean; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-sm font-medium text-slate-700">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
