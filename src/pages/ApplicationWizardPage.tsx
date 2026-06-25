@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api, apiUpload } from '../lib/api';
 import { isApplicationLockedError, isApiError } from '../lib/errors';
 import { validateUploadFile, MAX_UPLOAD_LABEL } from '../lib/uploadValidation';
+import { toast } from '../lib/toast';
 import { canEditApplication } from '../lib/applicationAccess';
 import { STATUS_LABELS, statusBadgeClasses } from '../lib/applicationStatus';
 import { autofillSampleDocuments, WIZARD_DOC_TYPES } from '../lib/sampleDocuments';
 import { SINDH_DISTRICTS } from '../lib/districts';
+import { isProgramEligible, normalizeEligibleDistricts } from '../lib/advertisementEligibility';
 import { RELIGIONS } from '../lib/religions';
 import { personalSchema, academicSchema, disabilitySchema, PersonalForm, AcademicForm } from '../lib/validation';
 import { FormField, inputClass, btnPrimary, Card } from '../components/ui';
@@ -18,7 +20,13 @@ import StatusStepper from '../components/StatusStepper';
 import { useAuth } from '../context/AuthContext';
 
 const STEPS = ['Personal', 'Academic', 'Disability', 'Family', 'Financial', 'Documents', 'Review'];
-const DISTRICTS = SINDH_DISTRICTS;
+const STEP_SAVED_MESSAGES = [
+  'Personal details saved',
+  'Academic details saved',
+  'Disability information saved',
+  'Family details saved',
+  'Financial details saved',
+];
 const RELATIONS = ['Father', 'Mother', 'Brother', 'Sister', 'Guardian', 'Spouse', 'Other'];
 const MARITAL = ['Single', 'Married', 'Widowed', 'Divorced'];
 const EMPLOYMENT_TYPES = ['Employed', 'Self-Employed', 'Unemployed', 'Retired', 'Housewife', 'Student', 'Other'];
@@ -89,11 +97,44 @@ const emptyProperty = (): PropertyForm => ({
   remarks: '',
 });
 
+type LoadedAppSections = {
+  personal?: { fullName?: string; district?: string };
+  academic?: { enrollmentNumber?: string };
+  disability?: unknown;
+  familyMembers?: { name?: string }[];
+  incomeSources?: unknown[];
+  propertyAssets?: unknown[];
+  documents?: unknown[];
+};
+
+/** Highest step the user may open (completed steps + current frontier). */
+function inferWizardProgress(data: LoadedAppSections): { maxAccessible: number; resumeStep: number } {
+  if (!data.personal?.fullName?.trim() || !data.personal?.district?.trim()) {
+    return { maxAccessible: 0, resumeStep: 0 };
+  }
+  if (!data.academic?.enrollmentNumber?.trim()) {
+    return { maxAccessible: 1, resumeStep: 1 };
+  }
+  if (!data.disability) {
+    return { maxAccessible: 2, resumeStep: 2 };
+  }
+  if (!data.familyMembers?.some((m) => m.name?.trim())) {
+    return { maxAccessible: 3, resumeStep: 3 };
+  }
+  if (!data.incomeSources?.length && !data.propertyAssets?.length) {
+    return { maxAccessible: 4, resumeStep: 4 };
+  }
+  const hasDocs = (data.documents?.length ?? 0) > 0;
+  return { maxAccessible: hasDocs ? 6 : 5, resumeStep: hasDocs ? 6 : 5 };
+}
+
 export default function ApplicationWizardPage() {
   const { adId, programId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [step, setStep] = useState(0);
+  const [maxAccessibleStep, setMaxAccessibleStep] = useState(0);
+  const initialStepSet = useRef(false);
   const [appId, setAppId] = useState<string | null>(null);
   const [appStatus, setAppStatus] = useState<string | null>(null);
   const [initLoading, setInitLoading] = useState(true);
@@ -108,6 +149,8 @@ export default function ApplicationWizardPage() {
   const [documents, setDocuments] = useState<AppDoc[]>([]);
   const [docLinks, setDocLinks] = useState<Record<string, string>>({});
   const [docAutofillLoading, setDocAutofillLoading] = useState(false);
+  const [eligibleDistricts, setEligibleDistricts] = useState<string[]>([...SINDH_DISTRICTS]);
+  const [selectedProgramName, setSelectedProgramName] = useState('');
 
   const personalForm = useForm<PersonalForm>({ resolver: zodResolver(personalSchema), mode: 'onBlur' });
   const academicForm = useForm<AcademicForm>({ resolver: zodResolver(academicSchema), mode: 'onBlur' });
@@ -124,6 +167,21 @@ export default function ApplicationWizardPage() {
 
     (async () => {
       try {
+        const ad = await api<{
+          id: string;
+          name: string;
+          eligibleDistricts?: string[];
+          programs: { id: string; programName: string }[];
+        }>(`/advertisements/public/${adId}`);
+
+        if (!isProgramEligible(ad.programs, programId)) {
+          throw new Error('This program is not offered under this scholarship. Go back and choose a listed program.');
+        }
+
+        const districts = normalizeEligibleDistricts(ad.eligibleDistricts);
+        setEligibleDistricts(districts);
+        setSelectedProgramName(ad.programs.find((p) => p.id === programId)?.programName ?? '');
+
         const app = await api<{
           id: string;
           status: string;
@@ -162,6 +220,12 @@ export default function ApplicationWizardPage() {
 
   const isLockedView = !!(appId && appStatus && !canEditApplication({ status: appStatus }));
 
+  const goToStep = (target: number) => {
+    if (target < 0 || target > maxAccessibleStep) return;
+    setStep(target);
+    setActionError('');
+  };
+
   useEffect(() => {
     if (!appId || isLockedView) return;
     api<{
@@ -177,6 +241,8 @@ export default function ApplicationWizardPage() {
         personalForm.reset({
           ...data.personal,
           dateOfBirth: data.personal.dateOfBirth?.slice(0, 10) || '',
+          gender: (data.personal.gender || user?.gender || 'MALE') as PersonalForm['gender'],
+          religion: data.personal.religion || user?.religion || '',
         });
       } else if (user) {
         personalForm.reset({
@@ -193,7 +259,19 @@ export default function ApplicationWizardPage() {
           religion: user.religion || '',
         });
       }
-      if (data.academic) academicForm.reset(data.academic);
+      if (data.academic) {
+        academicForm.reset(data.academic);
+      } else if (user?.enrolledProgram || user?.academicYear) {
+        academicForm.reset({
+          academicYear: user.academicYear || '',
+          currentSemester: '',
+          enrollmentNumber: '',
+          cgpa: 0,
+          previousQualification: '',
+          previousInstitution: '',
+          previousMarks: '',
+        });
+      }
       if (data.disability) disabilityForm.reset(data.disability);
       if (data.familyMembers?.length) {
         setMembers(data.familyMembers.map((m) => ({
@@ -213,6 +291,13 @@ export default function ApplicationWizardPage() {
       if (data.incomeSources?.length) setIncomes(data.incomeSources as IncomeForm[]);
       if (data.propertyAssets?.length) setProperties(data.propertyAssets as PropertyForm[]);
       if (data.documents) setDocuments(data.documents);
+
+      const { maxAccessible, resumeStep } = inferWizardProgress(data);
+      setMaxAccessibleStep(maxAccessible);
+      if (!initialStepSet.current) {
+        setStep(resumeStep);
+        initialStepSet.current = true;
+      }
     }).catch(() => {});
   }, [appId, isLockedView, user]);
 
@@ -255,7 +340,7 @@ export default function ApplicationWizardPage() {
       });
     } else if (step === 1) {
       academicForm.reset({
-        academicYear: '3rd Year',
+        academicYear: '1st Year',
         enrollmentNumber: 'ENR-2023-4521',
         cgpa: 3.45,
         previousQualification: 'Intermediate (Pre-Engineering)',
@@ -320,6 +405,10 @@ export default function ApplicationWizardPage() {
           body: JSON.stringify({ properties, incomeSources: incomes }),
         });
       }
+      if (step < STEP_SAVED_MESSAGES.length) {
+        toast.success(STEP_SAVED_MESSAGES[step]);
+      }
+      setMaxAccessibleStep((m) => Math.max(m, step + 1));
       setStep(step + 1);
     } catch (e) {
       handleLockedError(e);
@@ -344,6 +433,7 @@ export default function ApplicationWizardPage() {
         const filtered = prev.filter((d) => d.type !== type);
         return [...filtered, doc];
       });
+      toast.success(`${type.replace(/_/g, ' ')} uploaded`);
     } catch (e) {
       if (isApplicationLockedError(e)) {
         handleLockedError(e);
@@ -368,6 +458,7 @@ export default function ApplicationWizardPage() {
         return [...filtered, doc];
       });
       setDocLinks((prev) => ({ ...prev, [type]: '' }));
+      toast.success(`${type.replace(/_/g, ' ')} linked`);
     } catch (e) {
       handleLockedError(e);
     }
@@ -378,6 +469,7 @@ export default function ApplicationWizardPage() {
     setActionError('');
     try {
       await api(`/applications/${appId}/submit`, { method: 'POST' });
+      toast.success('Application submitted successfully');
       navigate(`/application/${appId}`);
     } catch (e) {
       handleLockedError(e);
@@ -459,15 +551,51 @@ export default function ApplicationWizardPage() {
         status={appStatus ?? undefined}
       />
       <h1 className="text-2xl font-bold">Scholarship Application</h1>
+      {selectedProgramName && (
+        <p className="text-sm text-slate-600">
+          Applying for <strong className="text-slate-900">{selectedProgramName}</strong>
+          {eligibleDistricts.length < SINDH_DISTRICTS.length && (
+            <> · Eligible districts: {eligibleDistricts.join(', ')}</>
+          )}
+        </p>
+      )}
       {actionError && (
         <div className="p-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl">{actionError}</div>
       )}
       <div className="flex flex-wrap gap-2">
-        {STEPS.map((s, i) => (
-          <span key={s} className={`text-xs px-3 py-1 rounded-full ${i === step ? 'bg-emerald-700 text-white' : i < step ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>
-            {i + 1}. {s}
-          </span>
-        ))}
+        {STEPS.map((s, i) => {
+          const isCurrent = i === step;
+          const isAccessible = i <= maxAccessibleStep;
+          const pillClass = isCurrent
+            ? 'bg-emerald-700 text-white'
+            : isAccessible
+              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+              : 'bg-slate-100 text-slate-400 cursor-not-allowed';
+
+          if (isAccessible) {
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => goToStep(i)}
+                className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${pillClass}`}
+                aria-current={isCurrent ? 'step' : undefined}
+              >
+                {i + 1}. {s}
+              </button>
+            );
+          }
+
+          return (
+            <span
+              key={s}
+              className={`text-xs px-3 py-1 rounded-full ${pillClass}`}
+              title="Complete earlier steps first"
+            >
+              {i + 1}. {s}
+            </span>
+          );
+        })}
       </div>
       <Card title={`Step ${step + 1}: ${STEPS[step]}`} action={
         <button
@@ -485,25 +613,25 @@ export default function ApplicationWizardPage() {
             <FormField label="Father's Name" error={personalForm.formState.errors.fatherName} required><input {...personalForm.register('fatherName')} className={inputClass()} /></FormField>
             <FormField label="CNIC" error={personalForm.formState.errors.cnic} required><input {...personalForm.register('cnic')} className={inputClass(!!personalForm.formState.errors.cnic)} /></FormField>
             <FormField label="Date of Birth" error={personalForm.formState.errors.dateOfBirth} required><input type="date" {...personalForm.register('dateOfBirth')} className={inputClass()} /></FormField>
-            <FormField label="Gender" required>
-              <select {...personalForm.register('gender')} className={inputClass()}>
+            <FormField label="Gender" required hint={user?.profileComplete ? 'From your locked profile' : undefined}>
+              <select {...personalForm.register('gender')} className={inputClass()} disabled={!!user?.profileComplete}>
                 <option value="">Select</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
               </select>
             </FormField>
-            <FormField label="Religion" required>
-              <select {...personalForm.register('religion')} className={inputClass()}>
+            <FormField label="Religion" required hint={user?.profileComplete ? 'From your locked profile' : undefined}>
+              <select {...personalForm.register('religion')} className={inputClass()} disabled={!!user?.profileComplete}>
                 <option value="">Select</option>
                 {RELIGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             </FormField>
             <FormField label="Email" error={personalForm.formState.errors.email} required><input {...personalForm.register('email')} className={inputClass()} /></FormField>
             <FormField label="Mobile" error={personalForm.formState.errors.mobile} required><input {...personalForm.register('mobile')} className={inputClass()} /></FormField>
-            <FormField label="District" error={personalForm.formState.errors.district} required>
+            <FormField label="District" error={personalForm.formState.errors.district} required hint="Must match eligible districts for this scholarship">
               <select {...personalForm.register('district')} className={inputClass(!!personalForm.formState.errors.district)}>
                 <option value="">Select district</option>
-                {DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                {eligibleDistricts.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </FormField>
             <div className="md:col-span-2">
@@ -514,7 +642,9 @@ export default function ApplicationWizardPage() {
 
         {step === 1 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Academic Year" required><input {...academicForm.register('academicYear')} className={inputClass()} /></FormField>
+            <FormField label="Academic Year" required hint={user?.academicYear ? `From profile: ${user.enrolledProgram ?? 'your program'}` : undefined}>
+              <input {...academicForm.register('academicYear')} className={inputClass()} readOnly={!!user?.academicYear} />
+            </FormField>
             <FormField label="Enrollment No" required><input {...academicForm.register('enrollmentNumber')} className={inputClass()} /></FormField>
             <FormField label="CGPA" error={academicForm.formState.errors.cgpa} required><input type="number" step="0.01" {...academicForm.register('cgpa')} className={inputClass()} /></FormField>
             <FormField label="Previous Qualification" required><input {...academicForm.register('previousQualification')} className={inputClass()} /></FormField>
@@ -727,7 +857,7 @@ export default function ApplicationWizardPage() {
         )}
 
         <div className="flex gap-2 mt-6">
-          {step > 0 && <button type="button" onClick={() => setStep(step - 1)} className={btnSecondary()}>Previous</button>}
+          {step > 0 && <button type="button" onClick={() => goToStep(step - 1)} className={btnSecondary()}>Previous</button>}
           {step < STEPS.length - 1 ? (
             <button type="button" onClick={saveStep} className={btnPrimary()}>Next</button>
           ) : (

@@ -7,6 +7,7 @@ import { canEditApplication } from '../lib/applicationAccess';
 import { STATUS_LABELS } from '../lib/applicationStatus';
 import CountdownTimer from '../components/CountdownTimer';
 import { SINDH_DISTRICTS } from '../lib/districts';
+import { isProgramEligible } from '../lib/advertisementEligibility';
 import { btnPrimary } from '../components/ui';
 import { uploadUrl } from '../lib/uploads';
 
@@ -83,7 +84,8 @@ export default function AdvertisementDetailPage({ publicMode = false }: Props) {
   const uniQuota = ad.quotas?.find((q) => q.university?.id === user?.universityId);
   const canEdit = existing ? canEditApplication(existing) : false;
   const applyProgramId = existing?.programId ?? programId;
-  const applyPath = applyProgramId ? `/apply/${ad.id}/${applyProgramId}` : undefined;
+  const canApplyProgram = isProgramEligible(ad.programs, applyProgramId);
+  const applyPath = applyProgramId && canApplyProgram ? `/apply/${ad.id}/${applyProgramId}` : undefined;
   const applyHref = applyPath
     ? (user ? applyPath : `/login?redirect=${encodeURIComponent(applyPath)}`)
     : undefined;
@@ -264,12 +266,21 @@ export default function AdvertisementDetailPage({ publicMode = false }: Props) {
                 <Link to={applyHref} className={`${btnPrimary()} text-center block w-full py-3.5 rounded-xl font-semibold text-base`}>
                   {user ? 'Apply for this scholarship' : 'Login to apply'}
                 </Link>
+                {!existing && ad.programs.length > 0 && (
+                  <p className="text-xs text-center text-slate-500 mt-2">
+                    You can only apply for programs listed above. Your district must be eligible for this scholarship.
+                  </p>
+                )}
                 {!user && (
                   <p className="text-xs text-center text-slate-500 mt-2">
                     New student? <Link to={`/register?redirect=${encodeURIComponent(applyHref)}`} className="text-emerald-700 font-medium hover:underline">Register first</Link>
                   </p>
                 )}
               </>
+            ) : isOpen && ad.programs.length === 0 ? (
+              <p className="text-sm text-center text-amber-700 py-2">No programs are listed for this scholarship yet.</p>
+            ) : isOpen && !programId ? (
+              <p className="text-sm text-center text-slate-500 py-2">Select a program above to apply.</p>
             ) : (
               <p className="text-sm text-center text-slate-500 py-2">Applications are closed for this scholarship.</p>
             )}

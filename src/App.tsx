@@ -1,3 +1,4 @@
+import { Toaster } from 'sonner';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
@@ -44,6 +45,7 @@ function PublicOnly({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" richColors closeButton />
       <BrowserRouter>
         <Routes>
           {/* Public */}

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { registerSchema, RegisterForm } from '../lib/validation';
 import PublicLayout from '../components/PublicLayout';
 import VerifyRegistrationModal from '../components/VerifyRegistrationModal';
+import { toast } from '../lib/toast';
 import { FormField, inputClass, selectClass, btnPrimary } from '../components/ui';
 import { SEEF } from '../lib/seefContent';
 
@@ -54,11 +55,12 @@ export default function RegisterPage() {
   );
 
   const autofill = () => {
-    setValue('email', 'new.ahmed@student.usindh.edu.pk');
+    const siba = sortedUnis.find((u) => u.code === 'SIBA') ?? sortedUnis[0];
+    setValue('email', 'haseebmscsf26@iba-suk.edu.pk');
     setValue('password', 'password123');
     setValue('confirmPassword', 'password123');
     setValue('mobile', '0307-8901234');
-    if (sortedUnis[0]) setValue('universityId', sortedUnis[0].id);
+    if (siba) setValue('universityId', siba.id);
   };
 
   const emailHint = selectedUni?.emailDomains
@@ -146,7 +148,7 @@ export default function RegisterPage() {
                 </FormField>
 
                 <FormField label="University Email" error={errors.email} required hint={`Personal emails not accepted — use ${emailHint}`}>
-                  <input type="email" {...register('email')} className={inputClass(!!errors.email)} autoComplete="email" placeholder="you@student.usindh.edu.pk" />
+                  <input type="email" {...register('email')} className={inputClass(!!errors.email)} autoComplete="email" placeholder="haseebmscsf26@iba-suk.edu.pk" />
                 </FormField>
 
                 <FormField label="Mobile" error={errors.mobile} required>
@@ -177,6 +179,7 @@ export default function RegisterPage() {
           onClose={() => setVerifyInfo(null)}
           onVerify={async (method, code) => {
             await registerVerify(verifyInfo.pendingId, method, code);
+            toast.success('Account created successfully');
             navigate(redirect, { state: { welcome: true } });
           }}
         />

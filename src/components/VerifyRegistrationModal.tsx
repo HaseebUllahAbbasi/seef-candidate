@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from '../lib/toast';
 
 interface VerifyInfo {
   pendingId: string;
@@ -20,7 +21,6 @@ export default function VerifyRegistrationModal({ info, onVerify, onClose }: Pro
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [linkCopied, setLinkCopied] = useState(false);
 
   const submitOtp = async () => {
     if (tab === 'email_link') return;
@@ -41,8 +41,7 @@ export default function VerifyRegistrationModal({ info, onVerify, onClose }: Pro
 
   const copyLink = () => {
     navigator.clipboard.writeText(info.emailVerifyUrl);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
+    toast.success('Verification link copied');
   };
 
   return (
@@ -120,7 +119,7 @@ export default function VerifyRegistrationModal({ info, onVerify, onClose }: Pro
               </div>
               <div className="flex gap-2">
                 <button type="button" onClick={copyLink} className="flex-1 py-2.5 text-sm font-medium border border-slate-300 rounded-xl hover:bg-slate-50">
-                  {linkCopied ? 'Copied!' : 'Copy link'}
+                  Copy link
                 </button>
                 <a
                   href={info.emailVerifyUrl}

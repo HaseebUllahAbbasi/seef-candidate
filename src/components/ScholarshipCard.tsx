@@ -150,7 +150,7 @@ export default function ScholarshipCard({
 
         <p className="mt-2 flex items-start gap-2 text-sm text-emerald-700/90 font-medium">
           {iconBriefcase}
-          <span className="line-clamp-2">Sindh Education &amp; Literacy Department — SEEF Merit Scholarship {ad.year}</span>
+          <span className="line-clamp-2"> SEEF Merit Scholarship {ad.year}</span>
         </p>
 
         {ad.eligibleCriteria && (

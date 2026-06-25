@@ -27,7 +27,7 @@ export default function DashboardPage() {
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <p className="font-medium text-amber-900">Complete your profile</p>
-            <p className="text-sm text-amber-800 mt-0.5">Add your name, CNIC, and gender before applying for scholarships.</p>
+            <p className="text-sm text-amber-800 mt-0.5">Add your name, CNIC, program, year, gender, and religion on your profile before applying.</p>
           </div>
           <Link to="/profile" className="shrink-0 px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-xl hover:bg-emerald-800 text-center shadow-sm">
             Go to Profile

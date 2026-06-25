@@ -13,6 +13,8 @@ export interface User {
   mobile?: string;
   gender?: string | null;
   religion?: string | null;
+  enrolledProgram?: string | null;
+  academicYear?: string | null;
   universityId?: string | null;
   university?: { id: string; name: string; code: string };
   emailVerified?: boolean;

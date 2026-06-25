@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { toast } from '../lib/toast';
 import { Card } from '../components/ui';
 
 interface Notification {
@@ -32,6 +33,7 @@ export default function NotificationsPage() {
   const markAllRead = async () => {
     await api('/notifications/read-all', { method: 'PATCH' });
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+    toast.success('All notifications marked as read');
   };
 
   const unread = items.filter((n) => !n.read).length;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { toast } from '../lib/toast';
 import StatusStepper from '../components/StatusStepper';
 import DocumentPreview from '../components/DocumentPreview';
 import {
@@ -55,7 +56,6 @@ export default function ApplicationDetailPage() {
   const [app, setApp] = useState<AppDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [msg, setMsg] = useState('');
 
   const load = useCallback(() => {
     if (!id) return;
@@ -70,7 +70,7 @@ export default function ApplicationDetailPage() {
   const markRemarksResolved = async () => {
     if (!id) return;
     await api(`/applications/${id}/remarks-resolved`, { method: 'POST' });
-    setMsg('Thank you — your university will re-review your application.');
+    toast.success('Thank you — your university will re-review your application.');
     load();
   };
 
@@ -97,13 +97,17 @@ export default function ApplicationDetailPage() {
     </span>
   );
 
+  const finalResult = app.status === 'AWARDED'
+    ? { tone: 'success' as const, title: 'Scholarship Awarded', message: 'Congratulations! SEEF has awarded you this scholarship.' }
+    : app.status === 'WAITING_LIST'
+      ? { tone: 'neutral' as const, title: 'Waiting List', message: 'You are on the waiting list for this scholarship. You will be notified if a seat becomes available.' }
+      : app.status === 'REJECTED'
+        ? { tone: 'error' as const, title: 'Not Selected', message: 'Your application was not selected for this scholarship cycle.' }
+        : null;
+
   return (
     <div className="space-y-4">
       <Link to="/applications" className="text-sm text-slate-500 hover:text-emerald-700 transition-colors">← My applications</Link>
-
-      {msg && (
-        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800">{msg}</div>
-      )}
 
       <ApplicationRecordPanel>
         <ApplicationRecordHeader
@@ -138,6 +142,26 @@ export default function ApplicationDetailPage() {
         <ApplicationRecordStepper footer={app.submittedAt ? `Submitted ${new Date(app.submittedAt).toLocaleString()}` : undefined}>
           <StatusStepper status={app.status} />
         </ApplicationRecordStepper>
+
+        {finalResult && (
+          <div className={`mx-5 mb-4 p-4 rounded-xl border text-sm ${
+            finalResult.tone === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+              : finalResult.tone === 'error'
+                ? 'bg-red-50 border-red-200 text-red-900'
+                : 'bg-slate-50 border-slate-200 text-slate-800'
+          }`}>
+            <p className="font-semibold">{finalResult.title}</p>
+            <p className="mt-1">{finalResult.message}</p>
+          </div>
+        )}
+
+        {(app.status === 'INTERVIEW_CONDUCTED' || app.status === 'ON_HOLD_RESULT_PENDING') && (
+          <div className="mx-5 mb-4 p-4 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700">
+            <p className="font-semibold">Result pending</p>
+            <p className="mt-1">Your interview is complete. Final results will appear here once SEEF publishes the award decision.</p>
+          </div>
+        )}
 
         {(app.editUnlocked || hasRejectedDocs) && app.status === 'APPLIED_UNVERIFIED' && (
           <div className="px-5 py-3 border-b border-amber-100 bg-amber-50/80 text-sm text-amber-900">

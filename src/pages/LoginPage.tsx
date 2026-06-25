@@ -8,13 +8,7 @@ import PublicLayout from '../components/PublicLayout';
 import SeefLogo from '../components/SeefLogo';
 import { FormField, inputClass, btnPrimary } from '../components/ui';
 import { SEEF } from '../lib/seefContent';
-
-const DEMO_ACCOUNT = {
-  username: 'candidate.ahmed',
-  password: 'password123',
-  label: 'Ahmed Raza Khaskheli',
-  university: 'University of Sindh',
-};
+import { SIBA_DEMO_ACCOUNTS } from '../lib/demoAccounts';
 
 const STEPS = [
   { n: '1', title: 'Register', desc: 'University email + verification' },
@@ -35,9 +29,9 @@ export default function LoginPage() {
     mode: 'onBlur',
   });
 
-  const fillDemo = () => {
-    setValue('username', DEMO_ACCOUNT.username, { shouldValidate: true });
-    setValue('password', DEMO_ACCOUNT.password, { shouldValidate: true });
+  const fillDemo = (username: string, password: string) => {
+    setValue('username', username, { shouldValidate: true });
+    setValue('password', password, { shouldValidate: true });
   };
 
   return (
@@ -99,7 +93,7 @@ export default function LoginPage() {
                 className="space-y-4"
               >
                 <FormField label="Username or Email" error={errors.username} required>
-                  <input {...register('username')} className={inputClass(!!errors.username)} autoComplete="username" placeholder="you@student.usindh.edu.pk" />
+                  <input {...register('username')} className={inputClass(!!errors.username)} autoComplete="username" placeholder="you@student.iba-suk.edu.pk" />
                 </FormField>
                 <FormField label="Password" error={errors.password} required>
                   <input type="password" {...register('password')} className={inputClass(!!errors.password)} autoComplete="current-password" />
@@ -109,17 +103,23 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/80 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-emerald-800 mb-2">Demo account</p>
-                <p className="text-sm font-medium text-slate-900">{DEMO_ACCOUNT.label}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{DEMO_ACCOUNT.university}</p>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  <code className="bg-white px-2 py-1 rounded border border-slate-200">{DEMO_ACCOUNT.username}</code>
-                  <code className="bg-white px-2 py-1 rounded border border-slate-200">{DEMO_ACCOUNT.password}</code>
-                </div>
-                <button type="button" onClick={fillDemo} className="mt-3 w-full text-sm font-medium text-emerald-800 bg-white border border-emerald-200 rounded-lg py-2 hover:bg-emerald-50 transition-colors">
-                  Use demo credentials
-                </button>
+              <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/80 p-4 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-emerald-800">Sukkur IBA demo students</p>
+                <p className="text-xs text-slate-500">Password for all: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200">{SIBA_DEMO_ACCOUNTS[0].password}</code></p>
+                {SIBA_DEMO_ACCOUNTS.map((account) => (
+                  <div key={account.username} className="rounded-lg border border-emerald-100 bg-white p-3">
+                    <p className="text-sm font-medium text-slate-900">{account.label}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{account.university}</p>
+                    <code className="mt-2 inline-block text-xs bg-slate-50 px-2 py-1 rounded border border-slate-200">{account.username}</code>
+                    <button
+                      type="button"
+                      onClick={() => fillDemo(account.username, account.password)}
+                      className="mt-2 w-full text-sm font-medium text-emerald-800 border border-emerald-200 rounded-lg py-1.5 hover:bg-emerald-50 transition-colors"
+                    >
+                      Use this account
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

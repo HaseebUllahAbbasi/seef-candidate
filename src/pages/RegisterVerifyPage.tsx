@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { toast } from '../lib/toast';
 import PublicLayout from '../components/PublicLayout';
 
 export default function RegisterVerifyPage() {
@@ -19,6 +20,7 @@ export default function RegisterVerifyPage() {
     completeEmailLink(token)
       .then(() => {
         setStatus('success');
+        toast.success('Account verified — welcome to SEEF!');
         setTimeout(() => navigate('/dashboard'), 1500);
       })
       .catch((e) => {
