@@ -27,6 +27,7 @@ export const profileSchema = z.object({
   cnic: z.string().regex(/^\d{5}-\d{7}-\d$/, 'Format: XXXXX-XXXXXXX-X'),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
   religion: z.string().min(1, 'Select religion'),
+  district: z.string().min(1, 'Select district'),
   enrolledProgram: z.string().min(1, 'Select your program'),
   academicYear: z.string().min(1, 'Select your current year'),
   mobile: z.string().regex(MOBILE_REGEX).optional().or(z.literal('')),

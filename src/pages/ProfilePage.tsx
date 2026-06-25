@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { profileSchema, changePasswordSchema, ProfileForm, ChangePasswordForm } from '../lib/validation';
 import { userAvatar } from '../lib/avatar';
 import { RELIGIONS } from '../lib/religions';
+import { SINDH_DISTRICTS } from '../lib/districts';
 import { api } from '../lib/api';
 import { toast } from '../lib/toast';
 import { FormField, inputClass, selectClass, btnPrimary, Card } from '../components/ui';
@@ -29,6 +30,7 @@ export default function ProfilePage() {
       cnic: '',
       gender: undefined,
       religion: '',
+      district: '',
       enrolledProgram: '',
       academicYear: '',
       mobile: '',
@@ -43,6 +45,7 @@ export default function ProfilePage() {
       cnic: user.cnic || '',
       gender: (user.gender as ProfileForm['gender']) || undefined,
       religion: user.religion || '',
+      district: user.district || '',
       enrolledProgram: user.enrolledProgram || '',
       academicYear: user.academicYear || '',
       mobile: user.mobile || '',
@@ -85,7 +88,7 @@ export default function ProfilePage() {
           {welcome ? (
             <p className="font-medium">Welcome! Complete your profile once — it will be locked and used for all scholarship applications.</p>
           ) : (
-            <p>Fill in your details below. After saving, your profile cannot be edited. University comes from registration; choose your program and current year carefully.</p>
+            <p>Fill in your details below. After saving, your profile cannot be edited. University comes from registration; choose your program, current year, and district carefully.</p>
           )}
         </div>
       )}
@@ -131,6 +134,10 @@ export default function ProfilePage() {
             <div>
               <dt className="text-slate-500">Religion</dt>
               <dd className="font-medium text-slate-900 mt-0.5">{user.religion ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">District</dt>
+              <dd className="font-medium text-slate-900 mt-0.5">{user.district ?? '—'}</dd>
             </div>
             <div>
               <dt className="text-slate-500">Mobile</dt>
@@ -204,6 +211,12 @@ export default function ProfilePage() {
                 </select>
               </FormField>
             </div>
+            <FormField label="District" error={profileForm.formState.errors.district} required hint="Your domicile district — used on scholarship applications">
+              <select {...profileForm.register('district')} className={selectClass(!!profileForm.formState.errors.district)}>
+                <option value="">Select district</option>
+                {SINDH_DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </FormField>
             <FormField label="Mobile" error={profileForm.formState.errors.mobile}>
               <input {...profileForm.register('mobile')} className={inputClass()} />
             </FormField>

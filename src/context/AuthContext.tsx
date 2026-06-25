@@ -13,6 +13,7 @@ export interface User {
   mobile?: string;
   gender?: string | null;
   religion?: string | null;
+  district?: string | null;
   enrolledProgram?: string | null;
   academicYear?: string | null;
   universityId?: string | null;

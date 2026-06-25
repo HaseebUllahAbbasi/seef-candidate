@@ -243,6 +243,7 @@ export default function ApplicationWizardPage() {
           dateOfBirth: data.personal.dateOfBirth?.slice(0, 10) || '',
           gender: (data.personal.gender || user?.gender || 'MALE') as PersonalForm['gender'],
           religion: data.personal.religion || user?.religion || '',
+          district: data.personal.district || user?.district || '',
         });
       } else if (user) {
         personalForm.reset({
@@ -255,7 +256,7 @@ export default function ApplicationWizardPage() {
           mobile: user.mobile || '',
           permanentAddress: '',
           currentAddress: '',
-          district: '',
+          district: user.district || '',
           religion: user.religion || '',
         });
       }
@@ -628,8 +629,8 @@ export default function ApplicationWizardPage() {
             </FormField>
             <FormField label="Email" error={personalForm.formState.errors.email} required><input {...personalForm.register('email')} className={inputClass()} /></FormField>
             <FormField label="Mobile" error={personalForm.formState.errors.mobile} required><input {...personalForm.register('mobile')} className={inputClass()} /></FormField>
-            <FormField label="District" error={personalForm.formState.errors.district} required hint="Must match eligible districts for this scholarship">
-              <select {...personalForm.register('district')} className={inputClass(!!personalForm.formState.errors.district)}>
+            <FormField label="District" error={personalForm.formState.errors.district} required hint={user?.profileComplete ? 'From your locked profile' : 'Must match eligible districts for this scholarship'}>
+              <select {...personalForm.register('district')} className={inputClass(!!personalForm.formState.errors.district)} disabled={!!user?.profileComplete}>
                 <option value="">Select district</option>
                 {eligibleDistricts.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
