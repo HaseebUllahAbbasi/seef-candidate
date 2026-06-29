@@ -1,6 +1,12 @@
 import { z } from 'zod';
+import {
+  cnicFieldSchema,
+  mobileFieldSchema,
+  optionalMobileFieldSchema,
+  optionalCnicFieldSchema,
+} from './pakistanIdFormat';
 
-export const MOBILE_REGEX = /^03\d{2}-\d{7}$/;
+export { CNIC_REGEX, MOBILE_REGEX, CNIC_PLACEHOLDER, MOBILE_PLACEHOLDER, CNIC_ERROR, MOBILE_ERROR } from './pakistanIdFormat';
 
 export const loginSchema = z.object({
   username: z.string().min(1, 'University email or username is required'),
@@ -11,7 +17,7 @@ export const registerSchema = z.object({
   email: z.string().email('Enter a valid university email'),
   password: z.string().min(8, 'At least 8 characters'),
   confirmPassword: z.string().min(8),
-  mobile: z.string().regex(MOBILE_REGEX, 'Format: 03XX-XXXXXXX'),
+  mobile: mobileFieldSchema,
   universityId: z.string().min(1, 'Select your university'),
 }).refine((d) => d.password === d.confirmPassword, { message: 'Passwords do not match', path: ['confirmPassword'] });
 
@@ -24,13 +30,13 @@ export const changePasswordSchema = z.object({
 export const profileSchema = z.object({
   firstName: z.string().min(2, 'First name is required').max(50),
   lastName: z.string().min(2, 'Last name is required').max(50),
-  cnic: z.string().regex(/^\d{5}-\d{7}-\d$/, 'Format: XXXXX-XXXXXXX-X'),
+  cnic: cnicFieldSchema,
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
   religion: z.string().min(1, 'Select religion'),
   district: z.string().min(1, 'Select district'),
   enrolledProgram: z.string().min(1, 'Select your program'),
   academicYear: z.string().min(1, 'Select your current year'),
-  mobile: z.string().regex(MOBILE_REGEX).optional().or(z.literal('')),
+  mobile: optionalMobileFieldSchema,
 });
 
 export type LoginForm = z.infer<typeof loginSchema>;
@@ -38,17 +44,14 @@ export type RegisterForm = z.infer<typeof registerSchema>;
 export type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
 export type ProfileForm = z.infer<typeof profileSchema>;
 
-// Application wizard schemas (unchanged)
-export const CNIC_REGEX = /^\d{5}-\d{7}-\d$/;
-
 export const personalSchema = z.object({
   fullName: z.string().min(2).max(100),
   fatherName: z.string().min(2).max(100),
-  cnic: z.string().regex(CNIC_REGEX, 'Invalid CNIC format'),
+  cnic: cnicFieldSchema,
   dateOfBirth: z.string().min(1),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
   email: z.string().email(),
-  mobile: z.string().regex(MOBILE_REGEX, 'Invalid mobile format'),
+  mobile: mobileFieldSchema,
   permanentAddress: z.string().min(5).max(500),
   currentAddress: z.string().max(500).optional(),
   district: z.string().min(1, 'Select district'),

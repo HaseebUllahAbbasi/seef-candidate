@@ -10,6 +10,7 @@ import { SINDH_DISTRICTS } from '../lib/districts';
 import { api } from '../lib/api';
 import { toast } from '../lib/toast';
 import { FormField, inputClass, selectClass, btnPrimary, Card } from '../components/ui';
+import { cnicInputProps, mobileInputProps } from '../lib/formattedIdFields';
 
 export default function ProfilePage() {
   const { user, updateProfile, changePassword } = useAuth();
@@ -192,8 +193,8 @@ export default function ProfilePage() {
                 <input {...profileForm.register('lastName')} className={inputClass()} autoComplete="family-name" />
               </FormField>
             </div>
-            <FormField label="CNIC" error={profileForm.formState.errors.cnic} required hint="Required for applications">
-              <input {...profileForm.register('cnic')} placeholder="XXXXX-XXXXXXX-X" className={inputClass()} />
+            <FormField label="CNIC" error={profileForm.formState.errors.cnic} required hint="Format: XXXXX-XXXXXXX-X — dashes added automatically">
+              <input {...cnicInputProps(profileForm.register, profileForm.setValue, 'cnic')} className={inputClass(!!profileForm.formState.errors.cnic)} />
             </FormField>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="Gender" error={profileForm.formState.errors.gender} required>
@@ -217,8 +218,8 @@ export default function ProfilePage() {
                 {SINDH_DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </FormField>
-            <FormField label="Mobile" error={profileForm.formState.errors.mobile}>
-              <input {...profileForm.register('mobile')} className={inputClass()} />
+            <FormField label="Mobile" error={profileForm.formState.errors.mobile} hint="Format: 03XX-XXXXXXX">
+              <input {...mobileInputProps(profileForm.register, profileForm.setValue, 'mobile')} className={inputClass(!!profileForm.formState.errors.mobile)} />
             </FormField>
             <button type="submit" disabled={profileForm.formState.isSubmitting} className={btnPrimary()}>
               Save & lock profile

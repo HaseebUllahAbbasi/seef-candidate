@@ -13,6 +13,8 @@ import { SINDH_DISTRICTS } from '../lib/districts';
 import { isProgramEligible, normalizeEligibleDistricts } from '../lib/advertisementEligibility';
 import { RELIGIONS } from '../lib/religions';
 import { personalSchema, academicSchema, disabilitySchema, PersonalForm, AcademicForm } from '../lib/validation';
+import { formatCnicInput, CNIC_PLACEHOLDER } from '../lib/pakistanIdFormat';
+import { cnicInputProps, mobileInputProps } from '../lib/formattedIdFields';
 import { FormField, inputClass, btnPrimary, Card } from '../components/ui';
 import DocumentPreview from '../components/DocumentPreview';
 import ApplicationLockedModal from '../components/ApplicationLockedModal';
@@ -612,7 +614,9 @@ export default function ApplicationWizardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField label="Full Name" error={personalForm.formState.errors.fullName} required><input {...personalForm.register('fullName')} className={inputClass(!!personalForm.formState.errors.fullName)} /></FormField>
             <FormField label="Father's Name" error={personalForm.formState.errors.fatherName} required><input {...personalForm.register('fatherName')} className={inputClass()} /></FormField>
-            <FormField label="CNIC" error={personalForm.formState.errors.cnic} required><input {...personalForm.register('cnic')} className={inputClass(!!personalForm.formState.errors.cnic)} /></FormField>
+            <FormField label="CNIC" error={personalForm.formState.errors.cnic} required hint="Format: XXXXX-XXXXXXX-X">
+              <input {...cnicInputProps(personalForm.register, personalForm.setValue, 'cnic')} className={inputClass(!!personalForm.formState.errors.cnic)} />
+            </FormField>
             <FormField label="Date of Birth" error={personalForm.formState.errors.dateOfBirth} required><input type="date" {...personalForm.register('dateOfBirth')} className={inputClass()} /></FormField>
             <FormField label="Gender" required hint={user?.profileComplete ? 'From your locked profile' : undefined}>
               <select {...personalForm.register('gender')} className={inputClass()} disabled={!!user?.profileComplete}>
@@ -628,7 +632,9 @@ export default function ApplicationWizardPage() {
               </select>
             </FormField>
             <FormField label="Email" error={personalForm.formState.errors.email} required><input {...personalForm.register('email')} className={inputClass()} /></FormField>
-            <FormField label="Mobile" error={personalForm.formState.errors.mobile} required><input {...personalForm.register('mobile')} className={inputClass()} /></FormField>
+            <FormField label="Mobile" error={personalForm.formState.errors.mobile} required hint="Format: 03XX-XXXXXXX">
+              <input {...mobileInputProps(personalForm.register, personalForm.setValue, 'mobile')} className={inputClass(!!personalForm.formState.errors.mobile)} />
+            </FormField>
             <FormField label="District" error={personalForm.formState.errors.district} required hint={user?.profileComplete ? 'From your locked profile' : 'Must match eligible districts for this scholarship'}>
               <select {...personalForm.register('district')} className={inputClass(!!personalForm.formState.errors.district)} disabled={!!user?.profileComplete}>
                 <option value="">Select district</option>
@@ -683,7 +689,7 @@ export default function ApplicationWizardPage() {
                   <FormField label="Full Name" required>
                     <input value={m.name} onChange={(e) => updateMember(idx, { name: e.target.value })} className={inputClass()} />
                   </FormField>
-                  <FormField label="CNIC"><input value={m.cnic} onChange={(e) => updateMember(idx, { cnic: e.target.value })} placeholder="XXXXX-XXXXXXX-X" className={inputClass()} /></FormField>
+                  <FormField label="CNIC" hint="Format: XXXXX-XXXXXXX-X"><input value={m.cnic} onChange={(e) => updateMember(idx, { cnic: formatCnicInput(e.target.value) })} placeholder={CNIC_PLACEHOLDER} className={inputClass()} inputMode="numeric" maxLength={15} /></FormField>
                   <FormField label="Marital Status">
                     <select value={m.maritalStatus} onChange={(e) => updateMember(idx, { maritalStatus: e.target.value })} className={inputClass()}>
                       {MARITAL.map((s) => <option key={s} value={s}>{s}</option>)}

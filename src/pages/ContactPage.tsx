@@ -5,13 +5,15 @@ import { z } from 'zod';
 import PublicLayout from '../components/PublicLayout';
 import { FormField, inputClass, btnPrimary } from '../components/ui';
 import { SEEF } from '../lib/seefContent';
+import { cnicFieldSchema, mobileFieldSchema, optionalCnicFieldSchema } from '../lib/pakistanIdFormat';
+import { cnicInputProps, mobileInputProps } from '../lib/formattedIdFields';
 
 const contactSchema = z.object({
   type: z.enum(['complaint', 'inquiry', 'feedback', 'technical']),
   fullName: z.string().min(2, 'Name is required'),
   email: z.string().email('Valid email required'),
-  mobile: z.string().min(10, 'Valid mobile required'),
-  cnic: z.string().optional(),
+  mobile: mobileFieldSchema,
+  cnic: optionalCnicFieldSchema,
   subject: z.string().min(5, 'Subject must be at least 5 characters'),
   message: z.string().min(20, 'Please provide details (min 20 characters)'),
 });
@@ -27,7 +29,7 @@ const TYPE_LABELS: Record<ContactForm['type'], string> = {
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ContactForm>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<ContactForm>({
     resolver: zodResolver(contactSchema),
     defaultValues: { type: 'inquiry' },
     mode: 'onBlur',
@@ -115,14 +117,14 @@ export default function ContactPage() {
                   <FormField label="Full Name" error={errors.fullName} required>
                     <input {...register('fullName')} className={inputClass(!!errors.fullName)} />
                   </FormField>
-                  <FormField label="CNIC (optional)" error={errors.cnic}>
-                    <input {...register('cnic')} placeholder="42101-1234567-1" className={inputClass()} />
+                  <FormField label="CNIC (optional)" error={errors.cnic} hint="Format: XXXXX-XXXXXXX-X">
+                    <input {...cnicInputProps(register, setValue, 'cnic')} className={inputClass(!!errors.cnic)} />
                   </FormField>
                   <FormField label="Email" error={errors.email} required>
                     <input type="email" {...register('email')} className={inputClass(!!errors.email)} />
                   </FormField>
-                  <FormField label="Mobile" error={errors.mobile} required>
-                    <input {...register('mobile')} placeholder="03XX-XXXXXXX" className={inputClass(!!errors.mobile)} />
+                  <FormField label="Mobile" error={errors.mobile} required hint="Format: 03XX-XXXXXXX">
+                    <input {...mobileInputProps(register, setValue, 'mobile')} className={inputClass(!!errors.mobile)} />
                   </FormField>
                 </div>
 

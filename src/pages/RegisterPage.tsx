@@ -8,6 +8,7 @@ import PublicLayout from '../components/PublicLayout';
 import VerifyRegistrationModal from '../components/VerifyRegistrationModal';
 import { toast } from '../lib/toast';
 import { FormField, inputClass, selectClass, btnPrimary } from '../components/ui';
+import { mobileInputProps } from '../lib/formattedIdFields';
 import { SEEF } from '../lib/seefContent';
 
 interface Uni {
@@ -151,8 +152,8 @@ export default function RegisterPage() {
                   <input type="email" {...register('email')} className={inputClass(!!errors.email)} autoComplete="email" placeholder="haseebmscsf26@iba-suk.edu.pk" />
                 </FormField>
 
-                <FormField label="Mobile" error={errors.mobile} required>
-                  <input {...register('mobile')} placeholder="03XX-XXXXXXX" className={inputClass(!!errors.mobile)} autoComplete="tel" />
+                <FormField label="Mobile" error={errors.mobile} required hint="Format: 03XX-XXXXXXX — dash added automatically">
+                  <input {...mobileInputProps(register, setValue, 'mobile')} className={inputClass(!!errors.mobile)} autoComplete="tel" />
                 </FormField>
 
                 <div className="grid sm:grid-cols-2 gap-4">
